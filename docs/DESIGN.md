@@ -978,15 +978,23 @@ The guiding rule is:
 
 > Write the compiler in C, trust the C optimizer by default, and use assembly only as a measured local optimization.
 
-## 26. Initial target architecture
+## 26. Initial target architecture and platform order
 
 The first native target architecture for Fast compile is x86-64.
 
+Platform support is developed in this order:
+
+1. Linux x86-64
+2. Windows x86-64
+3. Additional platforms and architectures later
+
 The initial lightweight backend should focus on producing correct x86-64 machine code efficiently before additional architectures are added.
+
+The first platform implementation targets Linux. Windows support follows after the Linux backend and toolchain path are working reliably.
 
 ARM64 and other architectures may be added later, but they are not required for the first implementation.
 
-The operating system targets, object-file formats, executable formats, and linker integration for the first x86-64 implementation are still undecided.
+The exact object-file format emission, executable generation strategy, and linker integration for each platform are still separate design decisions.
 
 ## 27. Not decided yet
 
@@ -996,7 +1004,8 @@ The following areas are still open:
 - Threads and async
 - Compile-time execution and macros
 - Overflow behavior
-- Initial operating system target and object/executable formats
+- Linux object/executable format and linker strategy
+- Windows object/executable format and linker strategy
 - Linker strategy
 - File extension
 - Final concrete syntax
