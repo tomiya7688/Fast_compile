@@ -419,7 +419,29 @@ The guiding rule is:
 
 `string` remains a separate type from byte arrays and byte slices. Any conversion between them must be explicit.
 
-## 17. Not decided yet
+## 17. Array and slice bounds checking
+
+Normal array and slice indexing performs bounds checking.
+
+```text
+let values = [10, 20, 30]
+let x = values[i]
+```
+
+At runtime, the index must be within the valid range.
+
+If an index is a compile-time constant and is obviously out of range, compilation should fail immediately.
+
+```text
+let values = [10, 20, 30]
+let x = values[3] // compile error
+```
+
+If the index is only known at runtime, the generated code performs a simple bounds check before accessing memory.
+
+Unchecked indexing is not part of the normal language.
+
+## 18. Not decided yet
 
 The following areas are still open:
 
@@ -434,7 +456,7 @@ The following areas are still open:
 - Closures
 - Threads and async
 - Compile-time execution and macros
-- Overflow and bounds-checking behavior
+- Overflow behavior
 - Compiler backend
 - File extension
 - Final concrete syntax
