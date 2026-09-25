@@ -1034,14 +1034,39 @@ The guiding rule is:
 
 > Use mold by default, keep LLD as a fast fallback, and postpone a custom linker until measurements justify the implementation cost.
 
-## 28. Not decided yet
+## 28. Integer overflow behavior
+
+Normal integer arithmetic is checked for overflow.
+
+If an overflow is provably visible at compile time, compilation fails.
+
+```text
+let x: byte = 300 // compile error
+```
+
+If overflow depends on runtime values, the generated code checks the operation and terminates the program if the result cannot be represented in the destination type.
+
+```text
+let c = a + b // runtime overflow check when needed
+```
+
+This applies to signed and unsigned integer types.
+
+Fast compile does not silently wrap integer arithmetic in normal code.
+
+Explicit wrapping operations may be added later if low-level code requires them, but they are not part of the default arithmetic semantics.
+
+The guiding rule is:
+
+> Normal integer arithmetic either produces a representable result or terminates; silent wraparound is not allowed.
+
+## 29. Not decided yet
 
 The following areas are still open:
 
 - Closures
 - Threads and async
 - Compile-time execution and macros
-- Overflow behavior
 - Windows object/executable format and linker strategy
 - Linker strategy
 - File extension
