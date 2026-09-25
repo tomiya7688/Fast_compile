@@ -531,11 +531,57 @@ The guiding rule is:
 
 > An enum is a named set of explicit `int` constants.
 
-## 21. Not decided yet
+## 21. Error handling
+
+Fast compile does not have exceptions.
+
+There is no `throw`, `try`, `catch`, stack unwinding, or recoverable panic mechanism.
+
+Recoverable failures are returned explicitly with the built-in `Result<T, E>` type.
+
+```text
+fn parse(text: string) -> Result<int, ParseError> {
+    ...
+}
+```
+
+`Result<T, E>` has exactly two states:
+
+```text
+Ok(T)
+Err(E)
+```
+
+It is a built-in language type rather than a general user-defined payload enum.
+
+This allows error handling without introducing general tagged unions or exception control flow.
+
+A caller must handle the result explicitly before obtaining the success value.
+
+```text
+let result = parse("123")
+
+if result.ok {
+    let value = result.value
+} else {
+    let error = result.error
+}
+```
+
+The exact convenience syntax for inspecting or unwrapping a `Result` is still open; the semantic model is fixed.
+
+Ownership applies only to the active value inside the result. When a `Result` is moved or destroyed, only its active `T` or `E` value is moved or destroyed.
+
+Programming errors that are not intended to be recovered from, such as a runtime array bounds failure, terminate the program rather than throwing an exception.
+
+The guiding rule is:
+
+> Expected failure is an explicit value. Programming errors are not exceptions.
+
+## 22. Not decided yet
 
 The following areas are still open:
 
-- Error handling
 - Generics
 - Module/import system
 - Build system
