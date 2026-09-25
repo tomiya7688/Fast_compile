@@ -466,7 +466,7 @@ struct User {
 }
 ```
 
-Struct values are created explicitly with field values.
+Struct values are created explicitly with field values. All fields must be initialized; omitted fields are not silently filled with zero/default values.
 
 ```text
 let user = User {
