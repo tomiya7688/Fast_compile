@@ -254,11 +254,37 @@ These widths are fixed by the language and do not vary by target platform.
 
 Floating-point literals default to `float` (32-bit floating-point). A `double` value must be requested explicitly by context or type annotation.
 
-## 13. Not decided yet
+## 13. Core primitive numeric and boolean types
+
+Fast compile uses the following fixed-width primitive types:
+
+| Fast compile type | Meaning |
+| --- | --- |
+| `sbyte` | signed 8-bit integer |
+| `byte` | unsigned 8-bit integer |
+| `short` | signed 16-bit integer |
+| `ushort` | unsigned 16-bit integer |
+| `int` | signed 32-bit integer |
+| `uint` | unsigned 32-bit integer |
+| `long` | signed 64-bit integer |
+| `ulong` | unsigned 64-bit integer |
+| `float` | 32-bit floating-point |
+| `double` | 64-bit floating-point |
+| `bool` | boolean value (`true` or `false`) |
+
+All integer and floating-point widths are fixed by the language and do not change with the target platform.
+
+Default literal types remain:
+
+```text
+integer literal        -> int
+floating-point literal -> float
+```
+
+## 14. Not decided yet
 
 The following areas are still open:
 
-- Remaining primitive type set
 - Integer conversion rules
 - Strings
 - Arrays and slices
