@@ -956,25 +956,39 @@ The compiler implementation should avoid unnecessary runtime dependencies and ke
 
 A future self-hosted compiler may be considered later, but self-hosting is not required for the initial implementation.
 
-### Assembly for measured hot paths
+### Assembly only for partial, measured optimization
 
-Platform-specific assembly may be used for compiler hot paths when profiling shows that generated C code is a meaningful bottleneck.
+The compiler is written primarily in C and should normally rely on a high-quality C compiler's optimizer.
 
-Assembly is an optimization tool, not the default implementation language.
+Handwritten assembly is used only as a partial optimization technique for isolated hot paths where profiling demonstrates a real benefit.
 
-Each assembly implementation should have a portable C fallback so that:
+Fast compile does not treat assembly as a general replacement for C. In many cases, compiler-generated machine code is preferable to manually written assembly because it can optimize more effectively across surrounding code and target-specific details.
 
-- new architectures can be supported before handwritten assembly exists;
-- correctness can be tested against a reference implementation;
-- maintenance does not depend on assembly for every compiler component.
+Any assembly optimization should therefore:
 
-Likely candidates for future assembly optimization include extremely hot byte-scanning, hashing, copying, or other tight low-level loops, but only measured bottlenecks should be rewritten.
+- be limited to a small, well-defined routine or code path;
+- be justified by measurement;
+- have a portable C fallback;
+- preserve a clear C reference implementation where practical;
+- never become required for the compiler's overall architecture.
+
+Likely candidates include extremely hot byte-scanning, hashing, copying, or similarly tight low-level loops, but only after the C implementation and compiler optimization have been measured.
 
 The guiding rule is:
 
-> Use the lightweight backend for compile speed, LLVM when explicitly requesting deeper optimization, C for the compiler core, and assembly only where measurements justify it.
+> Write the compiler in C, trust the C optimizer by default, and use assembly only as a measured local optimization.
 
-## 26. Not decided yet
+## 26. Initial target architecture
+
+The first native target architecture for Fast compile is x86-64.
+
+The initial lightweight backend should focus on producing correct x86-64 machine code efficiently before additional architectures are added.
+
+ARM64 and other architectures may be added later, but they are not required for the first implementation.
+
+The operating system targets, object-file formats, executable formats, and linker integration for the first x86-64 implementation are still undecided.
+
+## 27. Not decided yet
 
 The following areas are still open:
 
@@ -982,7 +996,7 @@ The following areas are still open:
 - Threads and async
 - Compile-time execution and macros
 - Overflow behavior
-- Initial target architectures and object formats
+- Initial operating system target and object/executable formats
 - Linker strategy
 - File extension
 - Final concrete syntax
