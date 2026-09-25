@@ -441,7 +441,19 @@ If the index is only known at runtime, the generated code performs a simple boun
 
 Unchecked indexing is not part of the normal language.
 
-## 18. Not decided yet
+## 18. No unsafe mode in v0.1
+
+Fast compile v0.1 does not have an `unsafe` language mode or `unsafe { ... }` block.
+
+Unchecked array or slice indexing is not available.
+
+Low-level operations such as raw pointers may be designed later if they become necessary, but they will not require the language to introduce a general-purpose mode where normal safety rules are suspended.
+
+The guiding rule is:
+
+> Do not add a dangerous operation until there is a concrete need for it.
+
+## 19. Not decided yet
 
 The following areas are still open:
 
@@ -452,7 +464,6 @@ The following areas are still open:
 - Build system
 - C ABI / FFI
 - Raw pointers
-- `unsafe`
 - Closures
 - Threads and async
 - Compile-time execution and macros
