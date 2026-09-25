@@ -607,13 +607,128 @@ The guiding rule is:
 
 > Expected failure is an explicit value. Programming errors are not exceptions.
 
-## 22. Not decided yet
+## 22. Modules, compilation units, and incremental builds
+
+Fast compile treats large-project build scalability as a core language/toolchain concern.
+
+### Files and modules
+
+A source file is an independently compilable source unit.
+
+A module is a namespace and dependency boundary that may contain multiple source files.
+
+Changing one source file must not require reparsing or recompiling every other source file in the same module unless their actual dependencies changed.
+
+The exact source syntax for declaring and importing modules is still provisional.
+
+### Explicit public API
+
+Only explicitly exported declarations are part of a module's public interface.
+
+The exact keyword is provisional; examples may use `pub`.
+
+Keeping a declaration private means changes to it cannot invalidate external modules merely because its implementation changed.
+
+### Compiled interface metadata
+
+The compiler emits compact machine-readable interface metadata for exported declarations.
+
+Other modules read this metadata instead of reparsing dependency source files.
+
+The interface contains only information required by callers, such as:
+
+- exported names;
+- function parameter and return types;
+- exported struct type/layout information when required;
+- enum names and values;
+- exported constants and other compile-time values when required.
+
+Ordinary function bodies are not part of the public interface.
+
+The interface format should be binary or otherwise directly loadable by the compiler; it is not intended to behave like a C/C++ header file.
+
+### Per-symbol dependency tracking
+
+Incremental dependency tracking is performed at exported-symbol granularity rather than only at module granularity.
+
+When compiling code, the compiler records the exact external symbols and type layouts that code depends on, together with stable fingerprints of those interfaces.
+
+If an unrelated exported symbol changes, code that never depended on it does not need to be recompiled.
+
+For example:
+
+```text
+module A exports:
+    foo(int) -> int
+    bar(string) -> int
+
+module B uses only A.foo
+```
+
+Changing the implementation of `A.bar`, or even changing `A.bar`'s public signature, does not by itself require recompiling module B.
+
+Changing the public signature of `A.foo` does.
+
+### Implementation changes do not invalidate callers
+
+If a function body changes but its public interface fingerprint does not change, callers are not recompiled.
+
+Only the changed implementation needs new code generation, followed by the necessary link/update step.
+
+This rule intentionally discourages compilation strategies that require callers to inspect callee bodies.
+
+### Function-level incremental cache
+
+Within a changed source file, function bodies are independently cacheable.
+
+After the file is parsed, each function can be checked and code-generated using a cache key derived from at least:
+
+- the function body;
+- its signature;
+- the external interface fingerprints it actually uses;
+- relevant compiler options;
+- the target platform/backend version.
+
+Unchanged functions whose cache keys are still valid may reuse their previously generated result.
+
+This means editing one function in a very large file need not force expensive code generation for every other function in that file.
+
+Parsing the changed file itself may still occur; parsing is expected to remain deliberately cheap.
+
+### Parallel compilation
+
+Independent source files and independent function bodies should be compilable in parallel once the interfaces they require are available.
+
+Module dependencies should form a directed acyclic graph. Circular module imports are not supported.
+
+Recursive function calls within an already-resolved module/interface are still allowed; the restriction is on module dependency cycles.
+
+### No mandatory whole-program analysis
+
+Normal builds do not require whole-program type checking, cross-module lifetime analysis, or cross-module function-body inspection.
+
+Cross-module inlining and whole-program/LTO-style optimization are not required for a normal Fast compile build and must not be necessary for correctness.
+
+A future optional slow optimization mode may exist, but it must remain separate from the normal fast build path.
+
+### Build optimization priorities
+
+Fast compile optimizes build time at two levels:
+
+1. **Avoid work:** do not recompile code whose relevant interfaces and implementation cache keys did not change.
+2. **Make remaining work cheap:** keep lexing, parsing, type checking, dependency lookup, and code generation simple and efficient.
+
+Small constant-factor compiler optimizations still matter because they are multiplied across very large codebases, but avoiding unnecessary work has priority.
+
+The guiding rule is:
+
+> A local implementation change should cause a local rebuild unless it actually changes an interface that other code depends on.
+
+## 23. Not decided yet
 
 The following areas are still open:
 
 - Generics
-- Module/import system
-- Build system
 - C ABI / FFI
 - Raw pointers
 - Closures
