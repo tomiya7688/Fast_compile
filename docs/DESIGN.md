@@ -499,11 +499,42 @@ The guiding rule is:
 
 > A struct is data plus ordinary functions, not a hidden runtime object model.
 
-## 20. Not decided yet
+## 20. Enums
+
+Fast compile enums are simple named integer constants.
+
+Enums do not carry payload values and do not introduce tagged unions or pattern-matching semantics.
+
+```text
+enum State {
+    Idle = 0
+    Running = 1
+    Stopped = 2
+}
+```
+
+Every enum member value must be written explicitly. The compiler does not automatically assign sequential values.
+
+The underlying representation is `int` (signed 32-bit).
+
+Conceptually:
+
+```text
+State.Idle    == 0
+State.Running == 1
+State.Stopped == 2
+```
+
+More complex sum types or tagged unions may be designed separately in the future if needed, rather than making `enum` itself more complex.
+
+The guiding rule is:
+
+> An enum is a named set of explicit `int` constants.
+
+## 21. Not decided yet
 
 The following areas are still open:
 
-- Enum details
 - Error handling
 - Generics
 - Module/import system
