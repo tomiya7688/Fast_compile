@@ -724,11 +724,118 @@ The guiding rule is:
 
 > A local implementation change should cause a local rebuild unless it actually changes an interface that other code depends on.
 
-## 23. Not decided yet
+## 23. Generics
+
+Fast compile supports user-defined generics, but the normal fast build does not monomorphize and recompile generic bodies for every concrete type.
+
+### Compile generic bodies once
+
+A generic function body is type-checked once against opaque type parameters and code-generated once for the normal build.
+
+```text
+fn identity<T>(value: T) -> T {
+    return move value
+}
+```
+
+Calls such as:
+
+```text
+identity(10)
+identity("hello")
+```
+
+must not cause two independent compilations of the function body.
+
+The same principle applies to methods on generic structs.
+
+### Opaque type parameters
+
+A type parameter such as `T` is treated as an opaque type inside generic code.
+
+Generic code may perform operations that are valid without knowing the concrete type, including:
+
+- move a value;
+- borrow a value;
+- store and load a value;
+- pass it to another compatible generic or typed function;
+- return it;
+- place it in a generic struct or built-in generic container.
+
+Generic code may not assume that an arbitrary `T` supports arithmetic, comparison, methods, or other type-specific operations.
+
+For example:
+
+```text
+fn add<T>(a: T, b: T) -> T {
+    return a + b // invalid: + is not defined for arbitrary T
+}
+```
+
+Fast compile v0.1 does not introduce traits, concepts, generic constraints, specialization, or template metaprogramming to make such operations valid.
+
+### Runtime type descriptors
+
+The normal generic calling convention may pass compact hidden type descriptors for type parameters.
+
+A descriptor contains only low-level information required to manipulate an opaque value, such as:
+
+- size;
+- alignment;
+- move behavior;
+- destruction behavior;
+- layout information required by a generic aggregate.
+
+This allows one compiled generic body to operate on multiple concrete types without recompiling that body.
+
+Creating or looking up a descriptor for `Box<int>` or `Box<string>` is not considered recompiling the generic implementation.
+
+### Generic structs
+
+User-defined generic structs are allowed.
+
+```text
+struct Box<T> {
+    value: T
+}
+```
+
+Concrete layout information for a generic struct may be computed from the type descriptors of its fields.
+
+This layout computation should be small, cacheable metadata work rather than a fresh parse/type-check/codegen pass over the generic source.
+
+### Generic type inference
+
+Generic type arguments may be inferred only from the direct argument types at the call site.
+
+```text
+identity(10)      // T = int
+identity("hello") // T = string
+```
+
+The compiler does not infer generic types from return-value context, distant call sites, implicit numeric conversions, or whole-program analysis.
+
+Explicit type arguments remain valid when needed.
+
+### No template-style expansion
+
+Normal Fast compile builds do not:
+
+- paste generic source into each caller;
+- reparse generic source for each concrete type;
+- type-check the same generic body once per concrete type;
+- generate an unbounded number of native implementations through recursive template expansion.
+
+An optional future slow optimization mode may specialize selected generic functions for runtime performance, but specialization must not be required for correctness or for the normal fast build.
+
+The guiding rule is:
+
+> A generic abstraction may be instantiated many times, but its source body should be compiled once.
+
+## 24. Not decided yet
 
 The following areas are still open:
 
-- Generics
 - C ABI / FFI
 - Raw pointers
 - Closures
