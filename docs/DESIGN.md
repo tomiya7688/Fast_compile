@@ -18,6 +18,43 @@ the language should generally prefer the simpler local rule.
 The compiler should not inspect unrelated function bodies merely to decide whether ordinary code is valid.
 
 
+### Small runtime footprint is a core goal
+
+Fast compile also targets a small runtime footprint.
+
+Large codebases may run on systems where CPU and memory resources are limited, including embedded, automotive, industrial, and other resource-constrained environments.
+
+The language must not require a large always-resident runtime merely to execute ordinary compiled code.
+
+The core runtime should therefore remain minimal and should avoid mandatory subsystems such as:
+
+- a garbage collector;
+- exception unwinding;
+- reflection metadata;
+- a virtual machine;
+- a large object runtime;
+- mandatory background threads;
+- mandatory async executors;
+- hidden global allocation registries;
+- large per-type runtime metadata.
+
+Ordinary code should compile as directly as practical to native code and ordinary calls.
+
+Features that need runtime support should use small, explicit helpers rather than pulling in a large monolithic runtime.
+
+The standard library and the language runtime are separate concerns. Programs should not be forced to link unused standard-library functionality.
+
+A minimal program should be able to link only the small runtime pieces it actually requires.
+
+Generic type descriptors, bounds-failure handling, overflow-failure handling, allocation helpers, and similar support mechanisms should be compact and linkable on demand.
+
+A future freestanding or restricted-runtime profile should be possible without redesigning the language.
+
+The guiding rule is:
+
+> A large source tree must not imply a large runtime footprint.
+
+
 ### Runtime performance is also a core goal
 
 Fast compile is not intended to trade away native runtime performance merely to achieve fast compilation.
