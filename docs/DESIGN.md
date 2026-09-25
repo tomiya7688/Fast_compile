@@ -17,6 +17,25 @@ the language should generally prefer the simpler local rule.
 
 The compiler should not inspect unrelated function bodies merely to decide whether ordinary code is valid.
 
+
+### Large-project compilation is the primary target
+
+Fast compile is primarily designed to reduce build times in large codebases where compilation can take many minutes or hours.
+
+Optimizing a tiny project from a few seconds to a slightly smaller number of seconds is not the main value proposition.
+
+Language and compiler design decisions should therefore prioritize:
+
+- avoiding whole-program analysis;
+- compiling modules and functions independently where possible;
+- minimizing recompilation after local changes;
+- maximizing safe parallel compilation;
+- preventing generic/template expansion from causing compile-time explosions;
+- keeping module interfaces cheap to load without reparsing unrelated source files;
+- making build cost scale predictably with the amount of changed code.
+
+A central success criterion is reducing very large build times by a substantial factor, not merely minimizing startup latency on small programs.
+
 ## 2. Garbage collection
 
 Fast compile does **not** use a garbage collector.
