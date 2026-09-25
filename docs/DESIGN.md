@@ -907,7 +907,74 @@ The guiding rule is:
 
 > Foreign code crosses a small explicit C ABI boundary; C++ complexity stays outside the core compiler.
 
-## 25. Not decided yet
+## 25. Compiler implementation and code-generation backends
+
+Fast compile uses two code-generation paths with different priorities.
+
+### Default lightweight backend
+
+The normal Fast compile build uses a lightweight native backend designed primarily for compilation throughput.
+
+The default backend should:
+
+- consume Fast compile's own simple IR;
+- perform only cheap, predictable lowering and local optimization;
+- emit native object code without requiring LLVM;
+- avoid expensive whole-program optimization;
+- be suitable for highly parallel function-level code generation;
+- keep startup and per-function code-generation overhead small.
+
+The normal fast build must remain fully functional when LLVM is not installed.
+
+### Optional LLVM backend
+
+LLVM is supported as an optional backend for builds where generated-code quality matters more than compile time.
+
+Conceptually:
+
+```text
+source
+  -> Fast compile front end
+  -> Fast compile IR
+       -> lightweight native backend   // normal fast build
+       -> LLVM backend                 // slower optimized build
+```
+
+Both backends share the same parser, type system, ownership checks, module metadata, and incremental dependency model.
+
+LLVM is not part of language correctness and must not become a mandatory dependency of the normal compiler path.
+
+A build mode may explicitly select LLVM or another future optimization backend.
+
+### Compiler implementation language
+
+The initial Fast compile compiler is implemented in C.
+
+C is preferred over Fortran for the compiler implementation because the workload is dominated by systems-oriented operations such as parsing, byte processing, hash tables, file and object-format handling, memory management, and operating-system interfaces rather than large numerical kernels.
+
+The compiler implementation should avoid unnecessary runtime dependencies and keep its own execution overhead low.
+
+A future self-hosted compiler may be considered later, but self-hosting is not required for the initial implementation.
+
+### Assembly for measured hot paths
+
+Platform-specific assembly may be used for compiler hot paths when profiling shows that generated C code is a meaningful bottleneck.
+
+Assembly is an optimization tool, not the default implementation language.
+
+Each assembly implementation should have a portable C fallback so that:
+
+- new architectures can be supported before handwritten assembly exists;
+- correctness can be tested against a reference implementation;
+- maintenance does not depend on assembly for every compiler component.
+
+Likely candidates for future assembly optimization include extremely hot byte-scanning, hashing, copying, or other tight low-level loops, but only measured bottlenecks should be rewritten.
+
+The guiding rule is:
+
+> Use the lightweight backend for compile speed, LLVM when explicitly requesting deeper optimization, C for the compiler core, and assembly only where measurements justify it.
+
+## 26. Not decided yet
 
 The following areas are still open:
 
@@ -915,7 +982,8 @@ The following areas are still open:
 - Threads and async
 - Compile-time execution and macros
 - Overflow behavior
-- Compiler backend
+- Initial target architectures and object formats
+- Linker strategy
 - File extension
 - Final concrete syntax
 - C-compatible struct layout details
