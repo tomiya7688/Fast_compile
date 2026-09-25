@@ -1385,11 +1385,54 @@ The guiding rule is:
 
 > Use explicit native threads first; do not make every program pay for an async runtime.
 
-## 32. Not decided yet
+## 32. Macros and compile-time execution
+
+Fast compile v0.1 does not include a general-purpose macro system.
+
+It also does not execute arbitrary user code during compilation.
+
+This means v0.1 has no:
+
+- textual preprocessor macros;
+- AST/procedural macros;
+- template metaprogramming;
+- arbitrary compile-time functions;
+- user code that runs inside the compiler process.
+
+### Why macros are excluded initially
+
+The language is primarily designed for very large projects, where macro systems can increase build cost and make dependencies harder to understand and cache.
+
+A source file should be understandable from its explicit imports, declarations, and ordinary code rather than depending on hidden source transformation.
+
+Avoiding macros also keeps parsing, diagnostics, IDE tooling, dependency tracking, and incremental compilation more predictable.
+
+### Compile-time constants remain simple
+
+Simple constants and constant expressions may still be evaluated by the compiler when all inputs are already known locally.
+
+For example, fixed array lengths, enum values, numeric literals, and other small deterministic expressions do not require a general compile-time programming system.
+
+This constant evaluation must remain bounded, local, and cheap.
+
+### Code generation belongs outside the language
+
+Projects that genuinely need generated source may use an external code-generation step that produces ordinary Fast compile source or interface data.
+
+Generated output is then compiled and cached like normal source.
+
+This keeps code generation visible to the build graph instead of embedding an open-ended programming environment inside every compilation.
+
+A future declarative macro facility may be considered only if large real-world projects demonstrate a clear need and if it can preserve predictable incremental compilation.
+
+The guiding rule is:
+
+> Prefer ordinary functions, generics, and external code generation over hidden compile-time source transformation.
+
+## 33. Not decided yet
 
 The following areas are still open:
 
-- Compile-time execution and macros
 - Windows object/executable format and linker strategy
 - Linker strategy
 - File extension
