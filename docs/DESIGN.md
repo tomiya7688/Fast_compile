@@ -1199,11 +1199,123 @@ The guiding rule is:
 
 > Define a tiny allocation boundary, keep allocator policy replaceable, and do not impose allocator metadata on every object.
 
-## 30. Not decided yet
+## 30. Closures
+
+Fast compile supports closures, but closure capture is explicit and designed to avoid escape analysis and hidden heap allocation.
+
+The exact closure syntax is provisional.
+
+### No implicit capture
+
+A closure never scans its surrounding scope and silently captures referenced variables.
+
+Every captured value must be listed explicitly.
+
+Conceptually:
+
+```text
+let factor = 2
+
+let scale = [factor](x: int) -> int {
+    return x * factor
+}
+```
+
+The compiler therefore knows the complete closure environment directly from the closure declaration.
+
+### Closure environment is an ordinary value
+
+A capturing closure is lowered to a small anonymous value containing only its explicitly captured fields plus an associated generated invoke function.
+
+Conceptually:
+
+```text
+closure:
+    captured fields
+
+generated function:
+    invoke(environment, arguments...)
+```
+
+The closure environment is not automatically heap allocated.
+
+If a closure is local, its captured storage may remain local just like an ordinary struct.
+
+### Capture ownership
+
+Capturing a trivially copyable scalar value such as an integer, floating-point value, boolean, enum, or opaque pointer copies that value into the closure environment.
+
+Capturing an owning value requires explicit `move`.
+
+Conceptually:
+
+```text
+let data = array<int>()
+
+let work = [move data]() {
+    ...
+}
+```
+
+After the move, the outer `data` no longer owns the array.
+
+Borrowed references such as `&T` and `&[T]` cannot be stored as closure captures in v0.1.
+
+This avoids introducing closure-specific lifetime inference.
+
+### Borrowed callable interface
+
+A function may accept a closure through a borrowed callable interface.
+
+The exact type syntax is provisional; examples use `&fn(...)`.
+
+```text
+fn for_each(values: &[int], action: &fn(int) -> void) {
+    ...
+}
+
+let factor = 2
+
+let scale = [factor](x: int) {
+    print(x * factor)
+}
+
+for_each(&values, &scale)
+```
+
+A borrowed callable is conceptually passed as:
+
+```text
+invoke-function pointer
+environment pointer
+```
+
+The environment pointer is valid only for the duration allowed by the normal borrowing rules.
+
+A borrowed callable cannot be stored or returned in a way that escapes its owner.
+
+This provides callbacks without requiring a garbage collector, reference counting, escape analysis, or hidden closure allocation.
+
+### Non-capturing closures
+
+A closure with no captures has no environment and can be lowered directly to an ordinary function pointer where compatible.
+
+Named functions may also be used where a compatible borrowed callable is expected.
+
+### No general closure runtime
+
+Fast compile does not require a global closure registry, reference counting, garbage collection, or a mandatory heap-backed function object.
+
+If a future feature needs a long-lived dynamically erased callable, it should be designed explicitly rather than making every closure pay that cost.
+
+The guiding rule is:
+
+> Capture explicitly, store captures as ordinary data, and borrow closures across call boundaries instead of hiding allocation or lifetime analysis.
+
+## 31. Not decided yet
 
 The following areas are still open:
 
-- Closures
 - Threads and async
 - Compile-time execution and macros
 - Windows object/executable format and linker strategy
