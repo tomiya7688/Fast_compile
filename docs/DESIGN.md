@@ -281,11 +281,43 @@ integer literal        -> int
 floating-point literal -> float
 ```
 
-## 14. Not decided yet
+## 14. No implicit numeric conversions
+
+Fast compile does not perform implicit conversions between numeric types.
+
+Once a value has a numeric type, assigning or passing it to a different numeric type requires an explicit conversion.
+
+```text
+let a = 10        // int
+let b: long = a   // invalid
+let c: long = a as long
+```
+
+Mixed-type arithmetic is also not implicitly promoted.
+
+```text
+let a: int = 10
+let b: long = 20
+let c = a + b     // invalid
+```
+
+One exception is a numeric literal whose type is determined directly by its declaration context. This is not treated as a conversion from an already-typed value.
+
+```text
+let a: long = 10
+let b: double = 1.5
+```
+
+The compiler only needs to check whether the literal itself is representable in the explicitly requested type.
+
+The guiding rule is:
+
+> Numeric values do not silently change type.
+
+## 15. Not decided yet
 
 The following areas are still open:
 
-- Integer conversion rules
 - Strings
 - Arrays and slices
 - Struct and enum details
