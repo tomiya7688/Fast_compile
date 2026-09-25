@@ -196,11 +196,39 @@ The guiding rule is:
 
 > Type inference may copy a type that is already locally known at declaration time; it must not search for a type.
 
-## 11. Not decided yet
+## 11. Integer defaults and signed integer names
+
+The default ordinary integer type is `int`.
+
+`int` is always a signed 32-bit integer.
+
+```text
+let x = 10 // int, signed 32-bit
+```
+
+A signed 64-bit integer is named `long`.
+
+```text
+let large: long = 8_000_000_000
+```
+
+These widths are fixed by the language and do not change with the target platform.
+
+Current mapping:
+
+| Fast compile type | Meaning |
+| --- | --- |
+| `int` | signed 32-bit integer |
+| `long` | signed 64-bit integer |
+
+Names and rules for unsigned integer types are not decided yet.
+
+## 12. Not decided yet
 
 The following areas are still open:
 
-- Primitive type set and the exact definition/width of `int`
+- Remaining primitive type set
+- Unsigned integer type names and rules
 - Integer conversion rules
 - Strings
 - Arrays and slices
