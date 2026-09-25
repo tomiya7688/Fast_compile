@@ -18,6 +18,31 @@ the language should generally prefer the simpler local rule.
 The compiler should not inspect unrelated function bodies merely to decide whether ordinary code is valid.
 
 
+### Runtime performance is also a core goal
+
+Fast compile is not intended to trade away native runtime performance merely to achieve fast compilation.
+
+The target is:
+
+- extremely fast compilation for large projects;
+- native-code execution suitable for performance-sensitive software;
+- predictable runtime costs;
+- no mandatory garbage collector;
+- no mandatory virtual dispatch or hidden object model;
+- no exception unwinding machinery;
+- no mandatory whole-program optimization for acceptable runtime performance.
+
+The normal lightweight backend should generate reasonably efficient native code with cheap local optimizations.
+
+The optional LLVM backend exists for builds that need more aggressive optimization without forcing that cost onto normal development builds.
+
+Language features should avoid imposing unnecessary hidden runtime costs. When a safety feature does have a runtime cost, such as array bounds checks or integer overflow checks, that cost should be explicit in the language design and kept as small and predictable as possible.
+
+The goal is not merely "compile faster than C++". It is:
+
+> Compile dramatically faster on large projects while remaining a fast native systems language.
+
+
 ### Large-project compilation is the primary target
 
 Fast compile is primarily designed to reduce build times in large codebases where compilation can take many minutes or hours.
