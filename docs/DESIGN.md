@@ -314,11 +314,54 @@ The guiding rule is:
 
 > Numeric values do not silently change type.
 
-## 15. Not decided yet
+## 15. Strings and character handling
+
+Fast compile has a `string` type but does not have a separate `char` type.
+
+All string literals are `string` values, including literals that visually contain only one character.
+
+```text
+let a = "A"      // string
+let b = "あ"     // string
+let c = "Hello"  // string
+```
+
+Strings use UTF-8 encoding.
+
+Indexing a string accesses its underlying UTF-8 bytes and returns a `byte`.
+
+```text
+let s = "Hello"
+let b = s[0] // byte
+```
+
+For multi-byte UTF-8 characters, indexing still operates on bytes rather than Unicode code points or user-perceived characters.
+
+```text
+let s = "あ"
+let b = s[0] // first UTF-8 byte
+```
+
+String length is defined as the number of UTF-8 bytes.
+
+```text
+let a = "abc"
+a.length // 3
+
+let b = "あ"
+b.length // 3
+```
+
+Unicode-aware operations such as code-point iteration, grapheme handling, and Unicode substring logic belong in the standard library rather than the core type system.
+
+The guiding rule is:
+
+> Core string operations are byte-oriented; Unicode-aware behavior is explicit.
+
+## 16. Not decided yet
 
 The following areas are still open:
 
-- Strings
 - Arrays and slices
 - Struct and enum details
 - Error handling
