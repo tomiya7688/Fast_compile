@@ -832,12 +832,85 @@ The guiding rule is:
 
 > A generic abstraction may be instantiated many times, but its source body should be compiled once.
 
-## 24. Not decided yet
+## 24. C ABI, FFI, and opaque pointers
+
+Fast compile v0.1 supports interoperability through the C ABI.
+
+Fast compile does not directly implement the C++ ABI.
+
+The exact declaration syntax is provisional; examples may use `extern "C"`.
+
+```text
+extern "C" fn create_window() -> ptr<Window>
+extern "C" fn destroy_window(window: ptr<Window>)
+```
+
+### C ABI only
+
+The core language interoperates with stable C-compatible function boundaries.
+
+It does not directly model C++ ABI features such as:
+
+- C++ name mangling;
+- classes and virtual dispatch;
+- C++ templates;
+- C++ exceptions;
+- RTTI;
+- compiler-specific C++ object ABI details.
+
+A C++ library can be exposed through a C-compatible wrapper.
+
+Fast compile intends to provide its own C++ wrapper/adaptor tooling later so users do not have to design that bridge manually for every project. That wrapper layer is separate from the core language and does not make the compiler itself implement the C++ ABI.
+
+### Opaque pointer type
+
+Fast compile has an opaque pointer type written as `ptr<T>` for FFI and other low-level handles.
+
+A `ptr<T>` may be stored, compared where appropriate, passed to functions, and returned from functions.
+
+Normal Fast compile code cannot directly dereference a `ptr<T>`.
+
+```text
+let window = create_window()
+
+// no ordinary *window-style dereference
+
+destroy_window(window)
+```
+
+This keeps raw foreign addresses from bypassing the normal ownership and borrowing model.
+
+Fast compile v0.1 does not add an `unsafe` block merely to make `ptr<T>` dereferenceable.
+
+### FFI-compatible values
+
+The initial C FFI permits simple fixed-width scalar values and opaque pointers.
+
+The core set includes the fixed-width Fast compile numeric types and `ptr<T>`.
+
+ABI mapping is based on the actual width and calling convention, not on similarly named C source types. For example, Fast compile `long` is always 64-bit even though C/C++ `long` varies by platform.
+
+Fast compile-specific runtime types are not passed across the C ABI implicitly.
+
+Examples include:
+
+- `string`;
+- `array<T>`;
+- `Result<T, E>`;
+- ordinary generic structs.
+
+Such values must be converted explicitly to a C-compatible representation, for example pointer + length for byte-oriented data.
+
+C-compatible struct layout support may be added separately when needed; ordinary Fast compile structs do not silently become C-layout structs.
+
+The guiding rule is:
+
+> Foreign code crosses a small explicit C ABI boundary; C++ complexity stays outside the core compiler.
+
+## 25. Not decided yet
 
 The following areas are still open:
 
-- C ABI / FFI
-- Raw pointers
 - Closures
 - Threads and async
 - Compile-time execution and macros
@@ -845,5 +918,7 @@ The following areas are still open:
 - Compiler backend
 - File extension
 - Final concrete syntax
+- C-compatible struct layout details
+- C++ wrapper/adaptor tooling details
 
 These should be decided with the primary goal of keeping compilation fast.
