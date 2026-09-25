@@ -1,0 +1,194 @@
+# Fast compile — Design Decisions
+
+This document records only decisions that have been agreed on so far.
+
+Syntax shown in examples is provisional unless explicitly specified otherwise.
+
+## 1. Primary goal
+
+Fast compile prioritizes **compiler speed and predictability**.
+
+When there is a choice between:
+
+- a sophisticated feature that requires expensive whole-program analysis, and
+- a simpler rule that can be checked locally,
+
+the language should generally prefer the simpler local rule.
+
+The compiler should not inspect unrelated function bodies merely to decide whether ordinary code is valid.
+
+## 2. Garbage collection
+
+Fast compile does **not** use a garbage collector.
+
+Memory reclamation should not depend on a tracing GC running during program execution.
+
+## 3. Ownership
+
+Heap-owned values have a single owner.
+
+```text
+let data = new Data()
+```
+
+Here, `data` owns the allocated value.
+
+When the owner leaves its scope, the value is automatically destroyed/freed.
+
+```text
+fn example() {
+    let data = new Data()
+    use(&data)
+} // data is automatically released here
+```
+
+This also applies to early returns and other normal exits from the scope.
+
+## 4. Explicit ownership transfer
+
+Ownership transfer is explicit.
+
+```text
+let a = new Data()
+let b = move a
+
+use(b) // OK
+use(a) // invalid: a no longer owns a value
+```
+
+After a move, the source variable is no longer usable as an owned value.
+
+An owned value may cross a function boundary by moving ownership.
+
+```text
+fn create() -> Data {
+    let value = new Data()
+    return move value
+}
+```
+
+## 5. Borrowed references
+
+A borrowed reference is written as `&T`.
+
+```text
+fn show(value: &Data) {
+    print(value)
+}
+```
+
+A borrow does not transfer ownership.
+
+```text
+let data = new Data()
+show(&data)
+use(data) // still owned here
+```
+
+## 6. Borrowed references do not escape
+
+Fast compile does not attempt a general-purpose lifetime proof across functions.
+
+A borrowed reference is valid only as a temporary view within the permitted local/function-call context. It cannot escape into a longer-lived location.
+
+For example, returning a borrowed reference is not supported:
+
+```text
+fn bad() -> &Data {
+    let data = new Data()
+    return &data // invalid
+}
+```
+
+Likewise, code cannot make a borrowed reference outlive the context in which it is valid by storing it in a global, object, container, or another escaping location.
+
+The important principle is:
+
+> The compiler should not follow a pointer through other functions to determine whether it is safe.
+
+Instead, the operation itself should simply be invalid under the local type/usage rules.
+
+## 7. Local errors instead of lifetime investigation
+
+Invalid reference operations should fail where they are written.
+
+Conceptually, the compiler should behave more like:
+
+```text
+expected: owned Data
+found:    borrowed &Data
+```
+
+than performing a complex analysis and reporting a long lifetime proof.
+
+In other words, for unsupported pointer/reference behavior, the language can effectively say:
+
+> There is no such operation here.
+
+This is intentional. Restrictions in the language are used to keep compilation simple and fast.
+
+## 8. Automatic destruction and manual free
+
+The normal path is automatic destruction when ownership ends.
+
+A manual `free`-style operation may also be supported for an owned value:
+
+```text
+let data = new Data()
+free(data)
+```
+
+After explicit release, the value is no longer usable.
+
+```text
+free(data)
+free(data) // invalid
+```
+
+This can be checked using simple local state such as:
+
+- alive
+- moved
+- freed
+- borrowed
+
+The language should avoid requiring general interprocedural lifetime inference for this bookkeeping.
+
+## 9. Function boundaries
+
+Current intended behavior:
+
+| Operation | Status |
+| --- | --- |
+| Pass an owned value by move | Allowed |
+| Return an owned value by move | Allowed |
+| Pass a temporary borrow to a function | Allowed |
+| Return a borrowed reference | Not allowed |
+| Store a borrow somewhere that can outlive its valid context | Not allowed |
+| Require the compiler to inspect another function body to prove a borrow safe | Avoided by design |
+
+## 10. Not decided yet
+
+The following areas are still open:
+
+- Primitive type set
+- Integer conversion rules
+- Strings
+- Arrays and slices
+- Struct and enum details
+- Error handling
+- Generics
+- Module/import system
+- Build system
+- C ABI / FFI
+- Raw pointers
+- `unsafe`
+- Closures
+- Threads and async
+- Compile-time execution and macros
+- Overflow and bounds-checking behavior
+- Compiler backend
+- File extension
+- Final concrete syntax
+
+These should be decided with the primary goal of keeping compilation fast.
