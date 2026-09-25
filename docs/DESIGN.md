@@ -252,14 +252,13 @@ double  // 64-bit floating-point
 
 These widths are fixed by the language and do not vary by target platform.
 
-The default type of floating-point literals is not decided yet.
+Floating-point literals default to `float` (32-bit floating-point). A `double` value must be requested explicitly by context or type annotation.
 
 ## 13. Not decided yet
 
 The following areas are still open:
 
 - Remaining primitive type set
-- Default type of floating-point literals
 - Integer conversion rules
 - Strings
 - Arrays and slices
