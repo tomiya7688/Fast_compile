@@ -167,11 +167,40 @@ Current intended behavior:
 | Store a borrow somewhere that can outlive its valid context | Not allowed |
 | Require the compiler to inspect another function body to prove a borrow safe | Avoided by design |
 
-## 10. Not decided yet
+## 10. Declaration-time type inference
+
+Fast compile supports only simple, local type inference that can be completed when a variable is declared.
+
+A variable's type is fixed at its declaration and does not change later.
+
+```text
+let x = 10
+```
+
+The compiler determines the type from the initializer and records it immediately. Later uses of `x` do not participate in deciding its type.
+
+The compiler must not infer a local variable's type by searching call sites, other functions, or later statements.
+
+Integer literals use the ordinary `int` type by default unless the declaration explicitly selects another numeric type.
+
+```text
+let count = 10        // int
+let count: SomeInt = 10
+```
+
+The exact set and widths of numeric types are still undecided; `SomeInt` above is only illustrative.
+
+Function parameter and return types are not inferred from usage. Function signatures must contain the information needed by callers without inspecting the function body.
+
+The guiding rule is:
+
+> Type inference may copy a type that is already locally known at declaration time; it must not search for a type.
+
+## 11. Not decided yet
 
 The following areas are still open:
 
-- Primitive type set
+- Primitive type set and the exact definition/width of `int`
 - Integer conversion rules
 - Strings
 - Arrays and slices
