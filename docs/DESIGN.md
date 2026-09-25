@@ -358,11 +358,71 @@ The guiding rule is:
 
 > Core string operations are byte-oriented; Unicode-aware behavior is explicit.
 
-## 16. Not decided yet
+## 16. Arrays and slices
+
+Fast compile distinguishes owning arrays from borrowed slices.
+
+### Fixed-size arrays
+
+A fixed-size array owns its elements and includes its length in the type.
+
+```text
+let values: [int; 4] = [10, 20, 30, 40]
+```
+
+`[int; 4]` and `[int; 8]` are different types.
+
+### Dynamic arrays
+
+A dynamic array is an owning container with runtime length.
+
+```text
+let values = array<int>()
+values.push(10)
+values.push(20)
+```
+
+Conceptually, a dynamic array contains a pointer, length, and capacity.
+
+Its backing storage is automatically released when ownership ends.
+
+### Borrowed slices
+
+A slice is a non-owning borrowed view written as `&[T]`.
+
+```text
+fn sum(values: &[int]) -> int {
+    ...
+}
+```
+
+Conceptually, a slice contains a pointer and length.
+
+Slices follow the same borrowing rule as `&T`:
+
+- they do not own memory;
+- they may be used locally or passed temporarily to a function;
+- they may not escape into a longer-lived location;
+- they may not be returned as borrowed references;
+- they may not be stored where they can outlive the borrowed data.
+
+Sub-slices are also borrowed views.
+
+```text
+let values = [10, 20, 30, 40]
+use(&values[1..3])
+```
+
+The guiding rule is:
+
+> Arrays own memory; slices never own memory.
+
+`string` remains a separate type from byte arrays and byte slices. Any conversion between them must be explicit.
+
+## 17. Not decided yet
 
 The following areas are still open:
 
-- Arrays and slices
 - Struct and enum details
 - Error handling
 - Generics
