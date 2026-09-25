@@ -1312,11 +1312,83 @@ The guiding rule is:
 
 > Capture explicitly, store captures as ordinary data, and borrow closures across call boundaries instead of hiding allocation or lifetime analysis.
 
-## 31. Not decided yet
+## 31. Threads and async
+
+Fast compile v0.1 supports native operating-system threads.
+
+`async` / `await` is not part of v0.1.
+
+### Native threads, not a language runtime scheduler
+
+Thread support is a thin standard-library/runtime wrapper over platform-native threads.
+
+The language does not require:
+
+- a green-thread scheduler;
+- a global task runtime;
+- a background worker pool;
+- an async executor;
+- a garbage collector;
+- a mandatory event loop.
+
+On Linux, the initial implementation may use the platform's normal pthread-compatible thread facilities. Windows uses the corresponding native thread facilities when that target is added.
+
+### Spawning transfers ownership
+
+A spawned thread must own everything it needs after the spawn call returns.
+
+Conceptually:
+
+```text
+let data = array<int>()
+
+let worker = [move data]() {
+    process(data)
+}
+
+let thread = thread.spawn(move worker)
+```
+
+Borrowed references such as `&T` and `&[T]` cannot be captured by a spawned thread.
+
+This means the compiler does not need cross-thread lifetime analysis to prove that stack references remain valid.
+
+The closure environment is moved into thread-owned storage required by the platform thread start mechanism and is destroyed when the thread function finishes.
+
+### Thread handles
+
+`thread.spawn` returns a small thread handle.
+
+A caller may explicitly wait for completion with `join`.
+
+Dropping a thread handle does not stop the running thread; it releases/detaches the handle according to the platform wrapper semantics.
+
+v0.1 does not require implicit joining at scope exit.
+
+### Synchronization
+
+Low-level synchronization primitives such as mutexes, condition variables, and atomic operations belong in the standard library/platform layer.
+
+They should be thin wrappers or compiler intrinsics where appropriate and must not pull in a large scheduler/runtime.
+
+Higher-level concurrency structures may be added later as libraries rather than mandatory language runtime features.
+
+### No async/await in v0.1
+
+Fast compile v0.1 does not transform functions into async state machines and does not provide built-in `async` / `await`.
+
+This keeps normal compilation, code size, runtime requirements, and control flow simple.
+
+Async support may be designed later if there is a demonstrated need. Any future design should avoid making a global executor or large runtime mandatory for programs that do not use async.
+
+The guiding rule is:
+
+> Use explicit native threads first; do not make every program pay for an async runtime.
+
+## 32. Not decided yet
 
 The following areas are still open:
 
-- Threads and async
 - Compile-time execution and macros
 - Windows object/executable format and linker strategy
 - Linker strategy
