@@ -996,7 +996,45 @@ ARM64 and other architectures may be added later, but they are not required for 
 
 The exact object-file format emission, executable generation strategy, and linker integration for each platform are still separate design decisions.
 
-## 27. Not decided yet
+## 27. Linux linker strategy
+
+Fast compile initially emits ELF object files (`.o`) on Linux x86-64 and delegates final linking to an external high-speed linker.
+
+The default linker is **mold**.
+
+The initial preference order is:
+
+1. `mold`
+2. `ld.lld` as the primary fallback
+3. the system linker only as a compatibility fallback
+
+### Why mold
+
+The default choice prioritizes link throughput for very large builds.
+
+mold is specifically designed as a high-performance ELF linker and supports Linux x86-64.
+
+Fast compile does not depend on mold for language correctness; it is the preferred external linker for the normal fast-build path.
+
+### Why keep lld support
+
+LLD remains an important fallback because it is mature, fast, widely deployed, and supports both ELF and PE/COFF.
+
+Keeping LLD compatibility also provides a useful alternate path for environments where mold is unavailable or incompatible with a particular link requirement.
+
+### Object-file strategy
+
+The lightweight backend initially emits ordinary ELF object files rather than generating the final executable directly.
+
+This keeps the first implementation smaller and lets Fast compile benefit immediately from mature parallel linkers.
+
+A future Fast compile-native incremental linker may bypass some object-file write/read work and may directly update or emit final executables, but that is a later optimization and is not required for v0.1.
+
+The guiding rule is:
+
+> Use mold by default, keep LLD as a fast fallback, and postpone a custom linker until measurements justify the implementation cost.
+
+## 28. Not decided yet
 
 The following areas are still open:
 
@@ -1004,7 +1042,6 @@ The following areas are still open:
 - Threads and async
 - Compile-time execution and macros
 - Overflow behavior
-- Linux object/executable format and linker strategy
 - Windows object/executable format and linker strategy
 - Linker strategy
 - File extension
