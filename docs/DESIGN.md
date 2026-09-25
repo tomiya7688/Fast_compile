@@ -1122,7 +1122,84 @@ The guiding rule is:
 
 > Normal integer arithmetic either produces a representable result or terminates; silent wraparound is not allowed.
 
-## 29. Not decided yet
+## 29. Allocator model
+
+Fast compile does not require a large built-in allocator implementation.
+
+The language/runtime defines only a minimal allocation ABI. The allocator implementation is supplied by the platform or selected build configuration.
+
+Conceptually, the required operations are equivalent to:
+
+```text
+alloc(size)
+realloc(pointer, size)
+free(pointer)
+```
+
+### Default Linux allocator
+
+The initial Linux implementation uses the system allocator underneath the Fast compile allocation ABI.
+
+Conceptually:
+
+```text
+fc_alloc   -> malloc
+fc_realloc -> realloc
+fc_free    -> free
+```
+
+The language is not permanently tied to these functions; they are only the initial platform implementation.
+
+### Replaceable allocator
+
+A build may replace the allocator implementation without changing application source code.
+
+This allows future configurations such as:
+
+- a custom high-performance allocator;
+- a fixed-pool allocator;
+- an application-specific allocator;
+- a restricted embedded allocator;
+- a no-heap profile.
+
+The exact build syntax for selecting an allocator is still provisional.
+
+### No per-container allocator object
+
+Ordinary containers do not carry an allocator object or allocator function pointer per instance.
+
+For example, a dynamic array remains conceptually:
+
+```text
+pointer
+length
+capacity
+```
+
+rather than:
+
+```text
+pointer
+length
+capacity
+allocator-pointer
+```
+
+Allocator selection is normally a program/build-level decision. This avoids increasing every container's memory footprint and avoids mandatory allocator dispatch on every allocation.
+
+### Future no-heap profile
+
+The language design should permit a future no-heap build profile.
+
+In such a profile, operations that require dynamic allocation are rejected, while fixed-size stack/static data remains usable.
+
+This is intended for embedded, automotive, and other restricted environments.
+
+The guiding rule is:
+
+> Define a tiny allocation boundary, keep allocator policy replaceable, and do not impose allocator metadata on every object.
+
+## 30. Not decided yet
 
 The following areas are still open:
 
