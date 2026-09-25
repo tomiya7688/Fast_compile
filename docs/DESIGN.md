@@ -556,7 +556,11 @@ It is a built-in language type rather than a general user-defined payload enum.
 
 This allows error handling without introducing general tagged unions or exception control flow.
 
-A caller must handle the result explicitly before obtaining the success value.
+A caller handles a result through three built-in members:
+
+- `.ok` returns a `bool`;
+- `.value` returns the success value;
+- `.error` returns the error value.
 
 ```text
 let result = parse("123")
@@ -568,7 +572,13 @@ if result.ok {
 }
 ```
 
-The exact convenience syntax for inspecting or unwrapping a `Result` is still open; the semantic model is fixed.
+There is no general pattern-matching requirement for `Result`.
+
+Accessing `.value` while the result contains `Err`, or accessing `.error` while it contains `Ok`, is a runtime programming error and terminates the program. The compiler does not need branch-sensitive analysis to prove that the correct member is accessed.
+
+`Ok(value)` and `Err(error)` are the built-in constructors.
+
+Convenience propagation syntax such as `?` is not part of v0.1.
 
 Ownership applies only to the active value inside the result. When a `Result` is moved or destroyed, only its active `T` or `E` value is moved or destroyed.
 
