@@ -223,12 +223,43 @@ Current mapping:
 
 Names and rules for unsigned integer types are not decided yet.
 
-## 12. Not decided yet
+## 12. Unsigned integers and floating-point types
+
+Unsigned integer types use the following names and fixed widths:
+
+| Fast compile type | Meaning |
+| --- | --- |
+| `uint` | unsigned 32-bit integer |
+| `ulong` | unsigned 64-bit integer |
+
+Floating-point types use the following names and fixed widths:
+
+| Fast compile type | Meaning |
+| --- | --- |
+| `float` | 32-bit floating-point |
+| `double` | 64-bit floating-point |
+
+Together with the previously defined signed integer types, the core numeric names are:
+
+```text
+int     // signed 32-bit
+long    // signed 64-bit
+uint    // unsigned 32-bit
+ulong   // unsigned 64-bit
+float   // 32-bit floating-point
+double  // 64-bit floating-point
+```
+
+These widths are fixed by the language and do not vary by target platform.
+
+The default type of floating-point literals is not decided yet.
+
+## 13. Not decided yet
 
 The following areas are still open:
 
 - Remaining primitive type set
-- Unsigned integer type names and rules
+- Default type of floating-point literals
 - Integer conversion rules
 - Strings
 - Arrays and slices
