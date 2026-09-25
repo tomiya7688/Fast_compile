@@ -1429,13 +1429,27 @@ The guiding rule is:
 
 > Prefer ordinary functions, generics, and external code generation over hidden compile-time source transformation.
 
-## 33. Not decided yet
+## 33. Source file extension
+
+Fast compile source files use the `.fscm` file extension.
+
+Examples:
+
+```text
+main.fscm
+math.fscm
+network.fscm
+engine.fscm
+```
+
+The extension is part of the normal source-file convention for the language.
+
+## 34. Not decided yet
 
 The following areas are still open:
 
 - Windows object/executable format and linker strategy
 - Linker strategy
-- File extension
 - Final concrete syntax
 - C-compatible struct layout details
 - C++ wrapper/adaptor tooling details
