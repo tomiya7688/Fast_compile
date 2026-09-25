@@ -453,11 +453,57 @@ The guiding rule is:
 
 > Do not add a dangerous operation until there is a concrete need for it.
 
-## 19. Not decided yet
+## 19. Structs
+
+Fast compile structs are simple value-oriented data structures, broadly similar to Go structs.
+
+There are no classes, inheritance hierarchies, virtual methods, or implicit constructors.
+
+```text
+struct User {
+    id: int
+    name: string
+}
+```
+
+Struct values are created explicitly with field values.
+
+```text
+let user = User {
+    id: 1,
+    name: "Taro"
+}
+```
+
+Field types are explicit in the struct definition.
+
+The compiler does not synthesize hidden initialization logic beyond the direct field initialization requested by the source code.
+
+Methods, if supported syntactically, are treated as ordinary functions associated with a struct rather than as a separate object system.
+
+Conceptually:
+
+```text
+fn User.print(self: &User) {
+    print(self.name)
+}
+```
+
+may be compiled like an ordinary function taking `&User`.
+
+Ownership rules apply recursively to struct fields.
+
+A struct that contains owning fields does not gain an implicit deep-copy operation. Moving the struct moves ownership of those fields with it.
+
+The guiding rule is:
+
+> A struct is data plus ordinary functions, not a hidden runtime object model.
+
+## 20. Not decided yet
 
 The following areas are still open:
 
-- Struct and enum details
+- Enum details
 - Error handling
 - Generics
 - Module/import system
