@@ -1927,6 +1927,23 @@ const c = a + b // compile error
 
 The compiler does not search for a hidden user-defined meaning of `+` for `Vec2`.
 
+
+This remains true even for a struct with only one numeric field.
+
+```text
+struct Weight {
+    value: float
+}
+
+const a = Weight { value: 1.0 }
+const b = Weight { value: 2.0 }
+
+const c = a + b             // compile error
+const d = a.value + b.value // allowed, result is float
+```
+
+Fast compile does not implicitly unwrap a struct to its only field or treat single-field structs as aliases for that field's type.
+
 If a project wants vector addition, it uses an ordinary named function:
 
 ```text
