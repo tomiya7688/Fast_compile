@@ -2402,7 +2402,74 @@ The guiding rule is:
 > Nested structs are ordinary values; recursive by-value layouts are not allowed.
 
 
-## 47. Not decided yet
+## 47. Module and import syntax
+
+A source file declares its module with `module`.
+
+```text
+module server
+```
+
+A module dependency is declared explicitly with `import`.
+
+```text
+import server
+import graphics.renderer
+import net.http
+```
+
+Imported modules are accessed through module qualification with `::`.
+
+```text
+server::run()
+graphics.renderer::draw()
+net.http::get()
+```
+
+### Import aliases
+
+A module import may declare a local alias with `as`.
+
+```text
+import graphics.renderer as render
+
+render::draw()
+```
+
+The alias changes only the local spelling used to qualify symbols. It does not merge imported symbols into the local namespace.
+
+### No wildcard imports
+
+Fast compile v0.1 does not support wildcard imports or import-all syntax.
+
+Forms conceptually equivalent to the following are not allowed:
+
+```text
+import graphics.renderer::*
+import *
+```
+
+Imported public symbols remain qualified through the module name or its explicit alias.
+
+### No implicit symbol injection
+
+Importing a module never makes its public names directly visible as unqualified local names.
+
+```text
+import server
+
+run()         // compile error
+server::run() // allowed
+```
+
+This keeps name resolution local and makes dependencies visible at each cross-module use site.
+
+The guiding rule is:
+
+> Declare dependencies explicitly, qualify cross-module symbols explicitly, and never import a namespace implicitly.
+
+
+## 48. Not decided yet
 
 The following areas are still open:
 
