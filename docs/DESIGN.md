@@ -2899,13 +2899,13 @@ The guiding rule is:
 > switch provides explicit multi-way branching with no fallthrough and exact type-defined equality.
 
 
-## 53. No function overloading
+## 53. No function overloading within a file
 
-Fast compile does not support function overloading.
+Fast compile does not support function overloading inside the same file module.
 
-Within a file module, a function name identifies exactly one function.
+Within one `.fscm` file, a function name identifies exactly one function.
 
-The following is invalid:
+The following is invalid inside a single file:
 
 ```text
 fn print(value: int) {
@@ -2918,27 +2918,36 @@ fn print(value: string) {
 // compile error: duplicate function name
 ```
 
-Different operations use different explicit names instead.
+Different files may define functions with the same name because the file module is part of the symbol identity.
+
+For example:
 
 ```text
-fn print_int(value: int) {
+// server/post.fscm
+public fn run(void) {
     ...
 }
 
-fn print_string(value: string) {
+// server/user.fscm
+public fn run(void) {
     ...
 }
 ```
 
-This applies regardless of parameter count, parameter types, return type, or generic parameters.
+Both are valid and are called distinctly:
 
-The compiler does not perform overload candidate collection or best-match selection.
+```text
+server.post::run();
+server.user::run();
+```
 
-A function call resolves by name first, then its arguments are checked against that single declaration.
+The compiler therefore never performs overload candidate collection or best-match selection.
+
+Within a file module, a call resolves to one function by name. Across files, package/file qualification selects the file module first, then the function name resolves uniquely inside that file.
 
 The guiding rule is:
 
-> One function name means one function.
+> One function name means one function per file module.
 
 
 ## 54. Not decided yet
