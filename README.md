@@ -48,7 +48,7 @@ Example syntax is currently provisional.
 
 ```text
 fn create() -> Data {
-    let x = new Data()
+    const x = new Data()
     return move x
 }
 
