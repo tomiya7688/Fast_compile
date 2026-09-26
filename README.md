@@ -23,9 +23,12 @@ Fast compile is built around four priorities, in this order:
 4. **Generated programs should remain reasonably small and fast.**  
    Fast compile targets native code, a small runtime footprint, predictable costs, and good performance without requiring a large VM, GC, or mandatory runtime scheduler.
 
+5. **The compiler implementation should stay reasonably small.**  
+   Fast compile should avoid accumulating large subsystems that are not necessary for correctness, fast builds, or useful native-code generation. Simpler language rules, limited compile-time machinery, and a lightweight default backend should naturally keep the compiler codebase and dependency footprint under control.
+
 In short:
 
-> Reliable compiler. Safer language. Fast builds. Lightweight native programs.
+> Reliable compiler. Safer language. Fast builds. Lightweight native programs. Small compiler.
 
 ## Current direction
 
