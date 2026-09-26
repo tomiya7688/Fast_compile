@@ -132,7 +132,7 @@ Memory reclamation should not depend on a tracing GC running during program exec
 Heap-owned values have a single owner.
 
 ```text
-let data = new Data()
+const data = new Data()
 ```
 
 Here, `data` owns the allocated value.
@@ -141,7 +141,7 @@ When the owner leaves its scope, the value is automatically destroyed/freed.
 
 ```text
 fn example() {
-    let data = new Data()
+    const data = new Data()
     use(&data)
 } // data is automatically released here
 ```
@@ -153,8 +153,8 @@ This also applies to early returns and other normal exits from the scope.
 Ownership transfer is explicit.
 
 ```text
-let a = new Data()
-let b = move a
+const a = new Data()
+const b = move a
 
 use(b) // OK
 use(a) // invalid: a no longer owns a value
@@ -166,7 +166,7 @@ An owned value may cross a function boundary by moving ownership.
 
 ```text
 fn create() -> Data {
-    let value = new Data()
+    const value = new Data()
     return move value
 }
 ```
@@ -184,7 +184,7 @@ fn show(value: &Data) {
 A borrow does not transfer ownership.
 
 ```text
-let data = new Data()
+const data = new Data()
 show(&data)
 use(data) // still owned here
 ```
@@ -199,7 +199,7 @@ For example, returning a borrowed reference is not supported:
 
 ```text
 fn bad() -> &Data {
-    let data = new Data()
+    const data = new Data()
     return &data // invalid
 }
 ```
@@ -238,7 +238,7 @@ The normal path is automatic destruction when ownership ends.
 A manual `free`-style operation may also be supported for an owned value:
 
 ```text
-let data = new Data()
+const data = new Data()
 free(data)
 ```
 
@@ -278,7 +278,7 @@ Fast compile supports only simple, local type inference that can be completed wh
 A variable's type is fixed at its declaration and does not change later.
 
 ```text
-let x = 10
+const x = 10
 ```
 
 The compiler determines the type from the initializer and records it immediately. Later uses of `x` do not participate in deciding its type.
@@ -288,8 +288,8 @@ The compiler must not infer a local variable's type by searching call sites, oth
 Integer literals use the ordinary `int` type by default unless the declaration explicitly selects another numeric type.
 
 ```text
-let count = 10        // int
-let count: SomeInt = 10
+const count = 10        // int
+const count: SomeInt = 10
 ```
 
 The exact set and widths of numeric types are still undecided; `SomeInt` above is only illustrative.
@@ -307,13 +307,13 @@ The default ordinary integer type is `int`.
 `int` is always a signed 32-bit integer.
 
 ```text
-let x = 10 // int, signed 32-bit
+const x = 10 // int, signed 32-bit
 ```
 
 A signed 64-bit integer is named `long`.
 
 ```text
-let large: long = 8_000_000_000
+const large: long = 8_000_000_000
 ```
 
 These widths are fixed by the language and do not change with the target platform.
@@ -392,24 +392,24 @@ Fast compile does not perform implicit conversions between numeric types.
 Once a value has a numeric type, assigning or passing it to a different numeric type requires an explicit conversion.
 
 ```text
-let a = 10        // int
-let b: long = a   // invalid
-let c: long = a as long
+const a = 10        // int
+const b: long = a   // invalid
+const c: long = a as long
 ```
 
 Mixed-type arithmetic is also not implicitly promoted.
 
 ```text
-let a: int = 10
-let b: long = 20
-let c = a + b     // invalid
+const a: int = 10
+const b: long = 20
+const c = a + b     // invalid
 ```
 
 One exception is a numeric literal whose type is determined directly by its declaration context. This is not treated as a conversion from an already-typed value.
 
 ```text
-let a: long = 10
-let b: double = 1.5
+const a: long = 10
+const b: double = 1.5
 ```
 
 The compiler only needs to check whether the literal itself is representable in the explicitly requested type.
@@ -425,9 +425,9 @@ Fast compile has a `string` type but does not have a separate `char` type.
 All string literals are `string` values, including literals that visually contain only one character.
 
 ```text
-let a = "A"      // string
-let b = "あ"     // string
-let c = "Hello"  // string
+const a = "A"      // string
+const b = "あ"     // string
+const c = "Hello"  // string
 ```
 
 Strings use UTF-8 encoding.
@@ -435,24 +435,24 @@ Strings use UTF-8 encoding.
 Indexing a string accesses its underlying UTF-8 bytes and returns a `byte`.
 
 ```text
-let s = "Hello"
-let b = s[0] // byte
+const s = "Hello"
+const b = s[0] // byte
 ```
 
 For multi-byte UTF-8 characters, indexing still operates on bytes rather than Unicode code points or user-perceived characters.
 
 ```text
-let s = "あ"
-let b = s[0] // first UTF-8 byte
+const s = "あ"
+const b = s[0] // first UTF-8 byte
 ```
 
 String length is defined as the number of UTF-8 bytes.
 
 ```text
-let a = "abc"
+const a = "abc"
 a.length // 3
 
-let b = "あ"
+const b = "あ"
 b.length // 3
 ```
 
@@ -471,7 +471,7 @@ Fast compile distinguishes owning arrays from borrowed slices.
 A fixed-size array owns its elements and includes its length in the type.
 
 ```text
-let values: [int; 4] = [10, 20, 30, 40]
+const values: [int; 4] = [10, 20, 30, 40]
 ```
 
 `[int; 4]` and `[int; 8]` are different types.
@@ -513,7 +513,7 @@ Slices follow the same borrowing rule as `&T`:
 Sub-slices are also borrowed views.
 
 ```text
-let values = [10, 20, 30, 40]
+const values = [10, 20, 30, 40]
 use(&values[1..3])
 ```
 
@@ -528,8 +528,8 @@ The guiding rule is:
 Normal array and slice indexing performs bounds checking.
 
 ```text
-let values = [10, 20, 30]
-let x = values[i]
+const values = [10, 20, 30]
+const x = values[i]
 ```
 
 At runtime, the index must be within the valid range.
@@ -537,8 +537,8 @@ At runtime, the index must be within the valid range.
 If an index is a compile-time constant and is obviously out of range, compilation should fail immediately.
 
 ```text
-let values = [10, 20, 30]
-let x = values[3] // compile error
+const values = [10, 20, 30]
+const x = values[3] // compile error
 ```
 
 If the index is only known at runtime, the generated code performs a simple bounds check before accessing memory.
@@ -573,7 +573,7 @@ struct User {
 Struct values are created explicitly with field values. All fields must be initialized; omitted fields are not silently filled with zero/default values.
 
 ```text
-let user = User {
+const user = User {
     id: 1,
     name: "Taro"
 }
@@ -667,12 +667,12 @@ A caller handles a result through three built-in members:
 - `.error` returns the error value.
 
 ```text
-let result = parse("123")
+const result = parse("123")
 
 if result.ok {
-    let value = result.value
+    const value = result.value
 } else {
-    let error = result.error
+    const error = result.error
 }
 ```
 
@@ -956,7 +956,7 @@ A `ptr<T>` may be stored, compared where appropriate, passed to functions, and r
 Normal Fast compile code cannot directly dereference a `ptr<T>`.
 
 ```text
-let window = create_window()
+const window = create_window()
 
 // no ordinary *window-style dereference
 
@@ -1126,13 +1126,13 @@ Normal integer arithmetic is checked for overflow.
 If an overflow is provably visible at compile time, compilation fails.
 
 ```text
-let x: byte = 300 // compile error
+const x: byte = 300 // compile error
 ```
 
 If overflow depends on runtime values, the generated code checks the operation and terminates the program if the result cannot be represented in the destination type.
 
 ```text
-let c = a + b // runtime overflow check when needed
+const c = a + b // runtime overflow check when needed
 ```
 
 This applies to signed and unsigned integer types.
@@ -1237,9 +1237,9 @@ Every captured value must be listed explicitly.
 Conceptually:
 
 ```text
-let factor = 2
+const factor = 2
 
-let scale = [factor](x: int) -> int {
+const scale = [factor](x: int) -> int {
     return x * factor
 }
 ```
@@ -1273,9 +1273,9 @@ Capturing an owning value requires explicit `move`.
 Conceptually:
 
 ```text
-let data = array<int>()
+const data = array<int>()
 
-let work = [move data]() {
+const work = [move data]() {
     ...
 }
 ```
@@ -1297,9 +1297,9 @@ fn for_each(values: &[int], action: &fn(int) -> void) {
     ...
 }
 
-let factor = 2
+const factor = 2
 
-let scale = [factor](x: int) {
+const scale = [factor](x: int) {
     print(x * factor)
 }
 
@@ -1363,13 +1363,13 @@ A spawned thread must own everything it needs after the spawn call returns.
 Conceptually:
 
 ```text
-let data = array<int>()
+const data = array<int>()
 
-let worker = [move data]() {
+const worker = [move data]() {
     process(data)
 }
 
-let thread = thread.spawn(move worker)
+const thread = thread.spawn(move worker)
 ```
 
 Borrowed references such as `&T` and `&[T]` cannot be captured by a spawned thread.
@@ -1469,23 +1469,32 @@ The extension is part of the normal source-file convention for the language.
 
 ## 34. Mutability
 
-Fast compile makes mutability explicit at declaration time.
+Fast compile uses two variable-declaration forms:
 
-`let` creates an immutable binding.
+- `const` creates an immutable binding;
+- `var` creates a mutable binding.
+
+There is no `const` declaration form.
 
 ```text
-let x = 10
+const x = 10
 x = 20 // compile error
+
+var y = 10
+y = 20 // allowed
 ```
 
-`var` creates a mutable binding.
+Type inference and explicit types work with both forms.
 
 ```text
-var x = 10
-x = 20 // allowed
+const x = 10        // inferred int, immutable
+const x2: int = 10  // explicit int, immutable
+
+var y = 10          // inferred int, mutable
+var y2: int = 10    // explicit int, mutable
 ```
 
-The variable's type is still fixed at declaration time. Mutability does not permit the type to change.
+A variable's type is still fixed at declaration time.
 
 ```text
 var x = 10   // int
@@ -1493,7 +1502,7 @@ x = 20       // allowed
 x = 1.5      // compile error: float is not int
 ```
 
-Mutating operations on owned values also require a mutable binding.
+Mutating operations on owned values require a mutable binding.
 
 ```text
 var values = array<int>()
@@ -1503,17 +1512,42 @@ values.push(10)
 An immutable binding cannot be modified through ordinary language operations.
 
 ```text
-let values = array<int>()
+const values = array<int>()
 values.push(10) // compile error
 ```
 
 Function parameters are immutable by default.
 
+### `const` is not a compile-time-only declaration
+
+A `const` value may be initialized from a runtime expression.
+
+```text
+const value: int = read_value()
+```
+
+This is valid because `const` means only that the binding cannot be changed after initialization.
+
+When a language feature requires a compile-time value, the compiler checks whether the expression is locally evaluable at compile time.
+
+```text
+const size = 1024
+var buffer: [byte; size] // allowed if size is a compile-time-evaluable expression
+```
+
+```text
+const size = read_size()
+var buffer: [byte; size] // compile error: size is not compile-time evaluable
+```
+
+Fast compile does not introduce a separate `constexpr`-style declaration in v0.1.
+
 Whether explicit mutable borrows are supported, and their exact syntax, is a separate design decision.
 
 The guiding rule is:
 
-> Mutation must be visible where the variable is declared.
+> Use `const` for values that do not change and `var` for values that do.
+
 
 ## 35. Not decided yet
 
