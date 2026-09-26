@@ -2899,7 +2899,49 @@ The guiding rule is:
 > switch provides explicit multi-way branching with no fallthrough and exact type-defined equality.
 
 
-## 53. Not decided yet
+## 53. No function overloading
+
+Fast compile does not support function overloading.
+
+Within a file module, a function name identifies exactly one function.
+
+The following is invalid:
+
+```text
+fn print(value: int) {
+    ...
+}
+
+fn print(value: string) {
+    ...
+}
+// compile error: duplicate function name
+```
+
+Different operations use different explicit names instead.
+
+```text
+fn print_int(value: int) {
+    ...
+}
+
+fn print_string(value: string) {
+    ...
+}
+```
+
+This applies regardless of parameter count, parameter types, return type, or generic parameters.
+
+The compiler does not perform overload candidate collection or best-match selection.
+
+A function call resolves by name first, then its arguments are checked against that single declaration.
+
+The guiding rule is:
+
+> One function name means one function.
+
+
+## 54. Not decided yet
 
 The following areas are still open:
 
