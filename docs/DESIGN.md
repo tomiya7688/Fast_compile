@@ -481,7 +481,7 @@ let values: [int; 4] = [10, 20, 30, 40]
 A dynamic array is an owning container with runtime length.
 
 ```text
-let values = array<int>()
+var values = array<int>()
 values.push(10)
 values.push(20)
 ```
@@ -1467,7 +1467,55 @@ engine.fscm
 
 The extension is part of the normal source-file convention for the language.
 
-## 34. Not decided yet
+## 34. Mutability
+
+Fast compile makes mutability explicit at declaration time.
+
+`let` creates an immutable binding.
+
+```text
+let x = 10
+x = 20 // compile error
+```
+
+`var` creates a mutable binding.
+
+```text
+var x = 10
+x = 20 // allowed
+```
+
+The variable's type is still fixed at declaration time. Mutability does not permit the type to change.
+
+```text
+var x = 10   // int
+x = 20       // allowed
+x = 1.5      // compile error: float is not int
+```
+
+Mutating operations on owned values also require a mutable binding.
+
+```text
+var values = array<int>()
+values.push(10)
+```
+
+An immutable binding cannot be modified through ordinary language operations.
+
+```text
+let values = array<int>()
+values.push(10) // compile error
+```
+
+Function parameters are immutable by default.
+
+Whether explicit mutable borrows are supported, and their exact syntax, is a separate design decision.
+
+The guiding rule is:
+
+> Mutation must be visible where the variable is declared.
+
+## 35. Not decided yet
 
 The following areas are still open:
 
