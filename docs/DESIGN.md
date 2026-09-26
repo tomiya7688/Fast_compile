@@ -1877,7 +1877,7 @@ Example:
 
 ```text
 for (var i = 0; i < 100; i = i + 1) {
-    process(i)
+    process(i);
 }
 ```
 
@@ -2257,7 +2257,7 @@ From outside the package, the caller must import the package and qualify the ref
 ```text
 import server
 
-server.post::run()
+server.post::run();
 ```
 
 Importing the package does not expose private declarations.
@@ -2610,7 +2610,7 @@ import server
 import database
 
 server.post::send()
-database.query::run()
+database.query::run();
 ```
 
 Imports are not re-exported in v0.1.
@@ -2630,11 +2630,11 @@ Fast compile uses ordinary `if / else if / else` control flow.
 
 ```text
 if (score >= 100) {
-    print("high")
+    print("high");
 } else if (score >= 50) {
-    print("middle")
+    print("middle");
 } else {
-    print("low")
+    print("low");
 }
 ```
 
@@ -2692,13 +2692,13 @@ The following are semantically equivalent:
 
 ```text
 if (ready) {
-    run()
+    run();
 }
 ```
 
 ```text
 if (ready) {
-run()
+run();
 }
 ```
 
@@ -2713,7 +2713,104 @@ The guiding rule is:
 > Formatting is for humans; braces and tokens define the program.
 
 
-## 51. Not decided yet
+## 51. Statement termination and loop control
+
+Fast compile uses semicolons to terminate simple statements and declarations.
+
+Newlines do not terminate statements.
+
+Examples:
+
+```text
+var x: int = 10;
+x = x + 1;
+print(x);
+return;
+```
+
+The same rule applies to `break` and `continue`.
+
+```text
+for (var i = 0; i < 100; i = i + 1) {
+    if (i == 50) {
+        break;
+    }
+
+    if (i == 10) {
+        continue;
+    }
+
+    process(i);
+}
+```
+
+`break;` exits the innermost enclosing `for` or `while` loop.
+
+`continue;` skips to the next iteration of the innermost enclosing loop.
+
+v0.1 does not include labeled `break` or labeled `continue`.
+
+### Blocks are not terminated by semicolons
+
+Control-flow and function blocks are delimited by braces and do not require a semicolon after the closing brace.
+
+```text
+if (ready) {
+    run();
+}
+
+while (running) {
+    step();
+}
+
+fn work(void) {
+    run();
+}
+```
+
+### Declarations
+
+Local and top-level value declarations end with semicolons.
+
+```text
+const MaxUsers: int = 1000;
+var activeUsers: int = 0;
+```
+
+Imports also end with semicolons.
+
+```text
+import server;
+import graphics as gfx;
+```
+
+Struct field declarations use semicolons.
+
+```text
+struct Point {
+    x: float;
+    y: float;
+}
+```
+
+Enum members remain comma-separated entries rather than statements.
+
+```text
+enum State {
+    Idle = 0,
+    Running = 1,
+    Stopped = 2
+}
+```
+
+The semicolons inside the three-clause `for` header are separators between its initialization, condition, and step clauses; they do not add extra statements.
+
+The guiding rule is:
+
+> Simple statements and declarations end with `;`; braces delimit compound structure.
+
+
+## 52. Not decided yet
 
 The following areas are still open:
 
