@@ -648,17 +648,32 @@ Field types are explicit in the struct definition.
 
 The compiler does not synthesize hidden initialization logic beyond the direct field initialization requested by the source code.
 
-Methods, if supported syntactically, are treated as ordinary functions associated with a struct rather than as a separate object system.
+Struct methods are supported as static syntax associated with a struct; they do not create a class or dynamic object model.
 
-Conceptually:
+The receiver is implicit. A method declaration does not list a `self` parameter.
 
 ```text
-fn User.print(self: &User) {
-    print(self.name)
+fn User.print(void) -> void {
+    print(self.name);
 }
 ```
 
-may be compiled like an ordinary function taking `&User`.
+Inside the method body, `self` is an implicit read-only receiver referring to the value on which the method was called.
+
+```text
+const user = User {
+    id: 1,
+    name: "Taro"
+};
+
+user.print();
+```
+
+Conceptually, the compiler may lower this to an ordinary function call that receives `&User` explicitly, but that receiver is not written in source code.
+
+There is no virtual dispatch, inheritance lookup, runtime method table, or overload resolution involved.
+
+The syntax for methods that consume ownership of the receiver, if needed, is a separate design decision. The default method receiver is read-only.
 
 Ownership rules apply recursively to struct fields.
 
