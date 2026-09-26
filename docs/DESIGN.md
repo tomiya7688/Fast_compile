@@ -1919,7 +1919,15 @@ Here too, `condition` must have type `bool`.
 
 ### Infinite loop
 
-An infinite loop is written:
+An explicit infinite loop may be written:
+
+```text
+for (true) {
+    ...
+}
+```
+
+Fast compile also allows the shorthand:
 
 ```text
 for {
@@ -1927,7 +1935,9 @@ for {
 }
 ```
 
-Parentheses are used whenever a `for` loop has a header expression or clause. The headerless infinite loop keeps the compact `for { ... }` form.
+These two forms are semantically equivalent.
+
+Parentheses are used whenever a `for` loop has a header expression or clause. The headerless form is only a shorthand for `for (true)`.
 
 ### No increment/decrement operators
 
@@ -2649,7 +2659,38 @@ The guiding rule is:
 > Conditions are always explicit boolean expressions.
 
 
-## 50. Not decided yet
+## 50. Whitespace and indentation
+
+Whitespace and indentation do not define program structure in Fast compile.
+
+Blocks are delimited by braces `{ }`, and control-flow headers use explicit syntax such as parentheses where defined.
+
+The following are semantically equivalent:
+
+```text
+if (ready) {
+    run()
+}
+```
+
+```text
+if (ready) {
+run()
+}
+```
+
+The compiler does not emit INDENT/DEDENT tokens and does not validate indentation style.
+
+Tabs versus spaces, indentation width, and alignment are formatting concerns rather than language semantics.
+
+A separate formatter may enforce a preferred style, but the compiler itself only parses the explicit syntax required for correctness.
+
+The guiding rule is:
+
+> Formatting is for humans; braces and tokens define the program.
+
+
+## 51. Not decided yet
 
 The following areas are still open:
 
