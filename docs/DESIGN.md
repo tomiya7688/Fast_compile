@@ -1549,7 +1549,129 @@ The guiding rule is:
 > Use `const` for values that do not change and `var` for values that do.
 
 
-## 35. Not decided yet
+## 35. Copy and move semantics
+
+Fast compile divides values into two categories:
+
+- copyable values;
+- move-only owning values.
+
+### Copyable primitive values
+
+The following primitive values are copyable:
+
+- `sbyte`
+- `byte`
+- `short`
+- `ushort`
+- `int`
+- `uint`
+- `long`
+- `ulong`
+- `float`
+- `double`
+- `bool`
+- enum values
+- `ptr<T>`
+
+Assigning or passing one of these values copies the value.
+
+```text
+const a: int = 10
+const b = a // copy
+```
+
+### Owning values are move-only
+
+Types that own resources are not copied implicitly.
+
+Examples include dynamically allocated arrays and owned strings.
+
+```text
+var data = array<int>()
+
+const a = data
+// compile error: array<int> is move-only
+
+const b = move data
+// allowed
+```
+
+After an explicit move, the source value is no longer usable as an owner.
+
+### Struct copyability is structural
+
+A struct is copyable only if every field is copyable.
+
+```text
+struct Point {
+    x: int
+    y: int
+}
+```
+
+`Point` is copyable.
+
+```text
+struct User {
+    id: int
+    name: string
+}
+```
+
+`User` is move-only because it contains an owning `string`.
+
+The same structural rule applies recursively to fixed-size arrays, generic structs, and built-in generic containers where applicable.
+
+### Fixed-size arrays
+
+A fixed-size array is copyable only if its element type is copyable.
+
+```text
+[int; 100]     // copyable
+[string; 100]  // move-only
+```
+
+### Result
+
+`Result<T, E>` is copyable only if both `T` and `E` are copyable.
+
+Otherwise it is move-only.
+
+### Function calls
+
+Passing a copyable value by value copies it.
+
+```text
+fn use_number(x: int) {
+    ...
+}
+
+const n = 10
+use_number(n) // copy
+```
+
+Passing a move-only value by value requires an explicit `move`.
+
+```text
+fn consume(values: array<int>) {
+    ...
+}
+
+var values = array<int>()
+
+consume(values)      // compile error
+consume(move values) // allowed
+```
+
+Borrowing remains the non-owning alternative when ownership should not move.
+
+The guiding rule is:
+
+> If every component is copyable, the value is copyable. If any component owns a resource, the value is move-only.
+
+
+## 36. Not decided yet
 
 The following areas are still open:
 
