@@ -635,7 +635,7 @@ struct User {
 }
 ```
 
-Struct values are created explicitly with field values. All fields must be initialized; omitted fields are not silently filled with zero/default values.
+Struct values are created explicitly with field values. Every field must be initialized either by the constructor expression or by an explicit default declared on that field; omitted fields are never silently filled with an undeclared zero/default value.
 
 ```text
 const user = User {
@@ -2256,7 +2256,76 @@ The guiding rule is:
 > Imports declare dependencies; functions perform runtime initialization.
 
 
-## 45. Not decided yet
+## 45. Initialization and struct field defaults
+
+Fast compile does not allow uninitialized variables.
+
+Every variable must have a valid value at the point where it is declared.
+
+```text
+var x: int        // compile error
+var user: User    // compile error
+```
+
+```text
+var x: int = 0
+```
+
+This rule also applies to module-level values.
+
+### Struct field defaults
+
+To avoid making large structs unnecessarily verbose, a struct field may declare an explicit default value.
+
+```text
+struct Config {
+    retries: int = 3
+    verbose: bool = false
+    name: string = ""
+}
+```
+
+When constructing the struct, fields with declared defaults may be omitted.
+
+```text
+var config = Config {
+    name: "server"
+}
+```
+
+This is equivalent to explicitly providing the declared defaults for the omitted fields.
+
+A field without a declared default must always be provided.
+
+```text
+struct User {
+    id: int
+    name: string
+    active: bool = true
+}
+
+var user = User {
+    id: 1,
+    name: "Taro"
+}
+```
+
+The compiler does not invent zero/default values for fields that do not declare one.
+
+### Default-expression restrictions
+
+Struct field defaults must be cheap and compile-time evaluable.
+
+They may not call arbitrary functions or perform runtime initialization.
+
+This preserves the rule that hidden initialization work does not occur.
+
+The guiding rule is:
+
+> Variables are never uninitialized, and omitted struct fields are allowed only when the struct itself explicitly defines their defaults.
+
+
+## 46. Not decided yet
 
 The following areas are still open:
 
