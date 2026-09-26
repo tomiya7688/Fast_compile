@@ -2325,7 +2325,84 @@ The guiding rule is:
 > Variables are never uninitialized, and omitted struct fields are allowed only when the struct itself explicitly defines their defaults.
 
 
-## 46. Not decided yet
+## 46. Nested structs and recursive layout
+
+Structs may contain other structs by value.
+
+```text
+struct Position {
+    x: float
+    y: float
+}
+
+struct Player {
+    id: int
+    pos: Position
+}
+```
+
+Without defaults, nested values must be initialized explicitly.
+
+```text
+var player = Player {
+    id: 1,
+    pos: Position {
+        x: 0.0,
+        y: 0.0
+    }
+}
+```
+
+Explicit field defaults may be used to reduce nested initialization boilerplate.
+
+```text
+struct Position {
+    x: float = 0.0
+    y: float = 0.0
+}
+
+struct Player {
+    id: int
+    pos: Position = Position {}
+}
+
+var player = Player {
+    id: 1
+}
+```
+
+A struct may not contain itself recursively by value, directly or indirectly, because that would make its size infinite or undefined.
+
+```text
+struct Node {
+    next: Node
+}
+// compile error
+```
+
+Indirect recursive value layouts are also rejected.
+
+```text
+struct A {
+    b: B
+}
+
+struct B {
+    a: A
+}
+// compile error
+```
+
+Opaque pointers such as `ptr<T>` have fixed size and therefore do not create an infinite layout, but they remain non-dereferenceable in ordinary Fast compile code.
+
+The compiler determines struct layout from the declared field graph and rejects recursive by-value cycles.
+
+The guiding rule is:
+
+> Nested structs are ordinary values; recursive by-value layouts are not allowed.
+
+
+## 47. Not decided yet
 
 The following areas are still open:
 
