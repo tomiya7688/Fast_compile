@@ -650,15 +650,15 @@ The compiler does not synthesize hidden initialization logic beyond the direct f
 
 Struct methods are supported as static syntax associated with a struct; they do not create a class or dynamic object model.
 
-The receiver is implicit. A method declaration does not list a `self` parameter.
+The receiver is implicit. A method declaration does not list a `this` parameter.
 
 ```text
 fn User.print(void) -> void {
-    print(self.name);
+    print(this.name);
 }
 ```
 
-Inside the method body, `self` is an implicit read-only receiver referring to the value on which the method was called.
+Inside the method body, `this` is an implicit read-only receiver referring to the value on which the method was called.
 
 ```text
 const user = User {
