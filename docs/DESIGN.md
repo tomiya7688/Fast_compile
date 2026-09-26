@@ -775,7 +775,7 @@ The exact source syntax for declaring and importing modules is still provisional
 
 Only explicitly exported declarations are part of a module's public interface.
 
-The exact keyword is provisional; examples may use `pub`.
+The exact keyword is provisional; examples may use `public`.
 
 Keeping a declaration private means changes to it cannot invalidate external modules merely because its implementation changed.
 
@@ -2041,18 +2041,16 @@ var activeUsers: int = 0
 
 Top-level values belong to their module rather than to a hidden process-wide namespace.
 
-Declarations are private to the module by default.
+Module visibility is defined explicitly with `private` or `public`.
 
 A value may be accessed from another module only when:
 
-1. the declaring module explicitly exports it; and
+1. the declaration is `public`; and
 2. the using module explicitly imports the declaring module.
 
-The exact export/import surface syntax is still provisional; examples may use `pub`.
-
 ```text
-pub const MaxUsers: int = 1000
-pub var activeUsers: int = 0
+public const MaxUsers: int = 1000
+public var activeUsers: int = 0
 ```
 
 An imported public `const` may be read but not changed.
@@ -2139,7 +2137,68 @@ The guiding rule is:
 > Use `.` for values and `::` for namespaces/modules.
 
 
-## 43. Not decided yet
+## 43. Module visibility
+
+Top-level declarations have explicit module visibility.
+
+Fast compile uses two visibility levels:
+
+- `private`: accessible only from within the same module;
+- `public`: accessible from other modules that explicitly import the declaring module.
+
+This applies to top-level functions, structs, enums, constants, variables, and other exported declarations.
+
+```text
+private fn helper(value: int) -> int {
+    ...
+}
+
+public fn run(void) {
+    ...
+}
+```
+
+A private declaration may be used by any source file that belongs to the same module.
+
+It is not visible through imports.
+
+A public declaration becomes available to another module only after that module explicitly imports the declaring module.
+
+```text
+import server
+
+server::run()
+```
+
+Importing a module does not expose its private declarations.
+
+```text
+server::helper(10) // compile error: helper is private
+```
+
+Public module-level values follow their mutability rules:
+
+```text
+public const MaxUsers: int = 1000
+public var activeUsers: int = 0
+```
+
+After importing the module:
+
+```text
+print(server::MaxUsers)       // allowed
+server::activeUsers = 10      // allowed
+server::MaxUsers = 20         // compile error
+```
+
+Cross-module access remains module-qualified with `::`; imports do not inject public symbols directly into the local namespace.
+
+The guiding rule is:
+
+> Private stays inside the module. Public becomes reachable only through an explicit import and module qualification.
+
+
+## 44. Not decided yet
 
 The following areas are still open:
 
