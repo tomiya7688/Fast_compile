@@ -1865,9 +1865,17 @@ Fast compile uses `for` as its loop construct.
 
 There is no separate `while` keyword in v0.1.
 
-### Counted / conditional loop
+### General for form
 
-The ordinary counted form keeps initialization, condition, and step together.
+The general form is:
+
+```text
+for (initialization; condition; step) {
+    ...
+}
+```
+
+Example:
 
 ```text
 for (var i = 0; i < 100; i = i + 1) {
@@ -1875,7 +1883,11 @@ for (var i = 0; i < 100; i = i + 1) {
 }
 ```
 
-The condition expression must have type `bool`.
+The three clauses are separated by exactly two semicolons.
+
+Each clause may be omitted.
+
+If the condition clause is present, it must have type `bool`.
 
 ```text
 for (var i = 0; i < 100; i = i + 1) {
@@ -1891,7 +1903,63 @@ for (var i = 0; i; i = i + 1) {
 // compile error: int is not bool
 ```
 
-This form is preferred when the progression of a loop variable should be visible at the loop header.
+An omitted condition is treated as `true`.
+
+```text
+for (var i = 0; ; i = i + 1) {
+    ...
+}
+```
+
+### Condition-only shorthand
+
+A condition-only loop may be written without the empty initialization and step clauses:
+
+```text
+for (condition) {
+    ...
+}
+```
+
+This is equivalent to:
+
+```text
+for (; condition; ) {
+    ...
+}
+```
+
+The condition must have type `bool`.
+
+### Infinite loop
+
+The full empty-clause form:
+
+```text
+for (;;) {
+    ...
+}
+```
+
+has an omitted condition and is therefore an infinite loop.
+
+The following forms are also equivalent:
+
+```text
+for (; true; ) {
+    ...
+}
+
+for (true) {
+    ...
+}
+
+for {
+    ...
+}
+```
+
+`for { ... }` is only a shorthand for the infinite-loop form.
 
 ### Collection loop
 
@@ -1904,40 +1972,6 @@ for (value in values) {
 ```
 
 v0.1 does not require a general user-defined iterator protocol merely to support this syntax. The initial form is defined for built-in array/slice-style collections.
-
-### Condition-only loop
-
-A condition-only loop uses `for` directly.
-
-```text
-for (condition) {
-    ...
-}
-```
-
-Here too, `condition` must have type `bool`.
-
-### Infinite loop
-
-An explicit infinite loop may be written:
-
-```text
-for (true) {
-    ...
-}
-```
-
-Fast compile also allows the shorthand:
-
-```text
-for {
-    ...
-}
-```
-
-These two forms are semantically equivalent.
-
-Parentheses are used whenever a `for` loop has a header expression or clause. The headerless form is only a shorthand for `for (true)`.
 
 ### No increment/decrement operators
 
@@ -1954,7 +1988,7 @@ This avoids special prefix/postfix mutation operators and keeps state changes vi
 
 The guiding rule is:
 
-> Use one loop construct, put loop headers in parentheses, and write loop-variable changes explicitly.
+> Use one loop construct, keep the three-clause form explicit when useful, and allow empty clauses where their meaning is unambiguous.
 
 
 ## 39. Operators
