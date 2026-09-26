@@ -2810,7 +2810,96 @@ The guiding rule is:
 > Simple statements and declarations end with `;`; braces delimit compound structure.
 
 
-## 52. Not decided yet
+## 52. switch
+
+Fast compile supports `switch` for explicit multi-way branching.
+
+The initial supported switch value types are:
+
+- integer types;
+- enums;
+- `string`.
+
+### Syntax
+
+```text
+switch (state) {
+    case State::Idle {
+        idle();
+    }
+
+    case State::Running {
+        run();
+    }
+
+    default {
+        stop();
+    }
+}
+```
+
+### No fallthrough
+
+Cases never fall through into the following case.
+
+There is no implicit case-to-case control flow, and `break;` is not required at the end of a case block.
+
+```text
+switch (value) {
+    case 1 {
+        first();
+    }
+
+    case 2 {
+        second();
+    }
+}
+```
+
+Only the matching case executes.
+
+### Case values
+
+Case labels must be compile-time-evaluable values compatible with the switch expression type.
+
+Duplicate case values are compile errors.
+
+### String switch
+
+A string switch compares UTF-8 byte sequences for exact equality.
+
+```text
+switch (key) {
+    case "name" {
+        parse_name();
+    }
+
+    case "age" {
+        parse_age();
+    }
+
+    default {
+        skip_value();
+    }
+}
+```
+
+No Unicode normalization, locale-aware comparison, or implicit case folding is performed.
+
+The compiler is free to choose an efficient lowering strategy, such as direct comparisons for a small number of cases or hash-based dispatch with equality verification for larger string switches. The observable semantics remain exact byte equality.
+
+### default
+
+`default` is optional.
+
+If no case matches and there is no `default`, the switch performs no action.
+
+The guiding rule is:
+
+> switch provides explicit multi-way branching with no fallthrough and exact type-defined equality.
+
+
+## 53. Not decided yet
 
 The following areas are still open:
 
