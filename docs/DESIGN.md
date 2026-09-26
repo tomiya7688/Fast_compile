@@ -1012,47 +1012,48 @@ A C++ library can be exposed through a C-compatible wrapper.
 
 Fast compile intends to provide its own C++ wrapper/adaptor tooling later so users do not have to design that bridge manually for every project. That wrapper layer is separate from the core language and does not make the compiler itself implement the C++ ABI.
 
-### Opaque pointer types and null
+### Opaque pointer type and null
 
-Fast compile does not allow null in normal reference or pointer values.
+Fast compile has one opaque pointer type written as `ptr<T>`.
 
-`&T`, `&[T]`, `string`, arrays, and `ptr<T>` are non-null by definition.
+`ptr<T>` is intended for FFI and other low-level handles.
 
-`ptr<T>` is an opaque, non-null foreign/native handle. It may be stored, compared where appropriate, passed to functions, and returned from functions, but normal Fast compile code cannot directly dereference it.
-
-```text
-const window: ptr<Window> = create_window()
-
-// no ordinary *window-style dereference
-
-destroy_window(window)
-```
-
-Because C APIs frequently use NULL, the FFI has a separate nullable opaque type, `cptr<T>`.
+A `ptr<T>` may contain a null pointer value.
 
 ```text
-extern "C" fn try_create_window() -> cptr<Window>
+extern "C" fn create_window() -> ptr<Window>
+
+const window = create_window()
+
+if window == null {
+    ...
+}
 ```
 
-A `cptr<T>` may contain a C null pointer. It is still not dereferenceable in Fast compile code.
+A `ptr<T>` may be stored, compared, passed to functions, and returned from functions.
 
-A `cptr<T>` cannot be implicitly converted or cast to `ptr<T>`. Converting it to a non-null `ptr<T>` requires a checked built-in operation that returns `Result<ptr<T>, NullPointer>` (exact convenience syntax may be finalized with the rest of the surface syntax).
+Normal Fast compile code cannot directly dereference a `ptr<T>`.
 
-Therefore Fast compile code cannot create a dereferenceable null reference or pointer.
+```text
+window.field   // invalid
+*window        // invalid
+```
 
-Foreign C code can still fail if an API is called with a value that violates that API's own contract; that is outside the Fast compile language's memory-safety guarantee.
+Because `ptr<T>` is not dereferenceable, a null value inside `ptr<T>` cannot cause a null pointer dereference in Fast compile code.
 
-Fast compile v0.1 does not add an `unsafe` block merely to make either pointer type dereferenceable.
+Normal references and owned values remain non-null by definition.
+
+Fast compile v0.1 does not add an `unsafe` block merely to make `ptr<T>` dereferenceable.
 
 The guiding rule is:
 
-> Null exists only at the foreign C boundary, in a type that Fast compile itself cannot dereference.
+> Null is allowed only in opaque pointer handles that Fast compile itself cannot dereference.
 
 ### FFI-compatible values
 
 The initial C FFI permits simple fixed-width scalar values and opaque pointers.
 
-The core set includes the fixed-width Fast compile numeric types, non-null `ptr<T>`, and nullable foreign `cptr<T>`.
+The core set includes the fixed-width Fast compile numeric types and opaque `ptr<T>` values.
 
 ABI mapping is based on the actual width and calling convention, not on similarly named C source types. For example, Fast compile `long` is always 64-bit even though C/C++ `long` varies by platform.
 
@@ -1654,7 +1655,6 @@ The following primitive values are copyable:
 - `bool`
 - enum values
 - `ptr<T>`
-- `cptr<T>`
 
 Assigning or passing one of these values copies the value.
 
@@ -1755,30 +1755,27 @@ The guiding rule is:
 
 ## 36. Null safety
 
-Fast compile has no general `null` value.
+Fast compile has no general nullable form of ordinary language values.
 
-Normal language types cannot contain null unless the type is specifically the foreign nullable pointer type `cptr<T>`.
-
-In particular:
+The nullability rules are:
 
 ```text
 &T          // never null
 &[T]        // never null
 string      // never null
 array<T>    // never null
-ptr<T>      // never null
-cptr<T>     // may contain C NULL, cannot be dereferenced
+ptr<T>      // may be null, but cannot be dereferenced
 ```
 
-There is no implicit nullable form of ordinary types.
+There is no separate nullable-reference type in v0.1.
 
-A null pointer dereference originating in Fast compile code is therefore impossible by construction: the only type that can carry C NULL is not dereferenceable, and checked conversion is required before obtaining a non-null `ptr<T>`.
+Because the only null-capable pointer type is opaque and non-dereferenceable, Fast compile code cannot perform a null pointer dereference through the normal language.
 
-This guarantee does not claim to make arbitrary foreign C implementations safe; calling buggy C code can still fail inside that foreign code.
+Foreign C code may still fail internally if an API is misused; that remains outside Fast compile's own pointer-safety guarantee.
 
 The guiding rule is:
 
-> Null is a foreign-data state, not a normal Fast compile value.
+> Ordinary values are non-null; opaque foreign pointers may be null but are not dereferenceable.
 
 
 ## 37. Not decided yet
