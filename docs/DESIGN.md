@@ -1598,7 +1598,7 @@ const values = array<int>()
 values.push(10) // compile error
 ```
 
-Function parameters are immutable by default.
+Function parameters are immutable by default. A parameter that must be rebound or mutated inside the function is declared with `var`.
 
 ### `const` is not a compile-time-only declaration
 
@@ -1623,8 +1623,6 @@ var buffer: [byte; size] // compile error: size is not compile-time evaluable
 ```
 
 Fast compile does not introduce a separate `constexpr`-style declaration in v0.1.
-
-Whether explicit mutable borrows are supported, and their exact syntax, is a separate design decision.
 
 The guiding rule is:
 
@@ -1778,7 +1776,55 @@ The guiding rule is:
 > Ordinary values are non-null; opaque foreign pointers may be null but are not dereferenceable.
 
 
-## 37. Not decided yet
+## 37. No mutable borrows
+
+Fast compile v0.1 does not have mutable borrowed references such as `&var T` or `&mut T`.
+
+A borrowed reference `&T` is always read-only.
+
+If a function needs to transform an owned value, ownership is moved into the function and the transformed value is returned to the caller.
+
+```text
+fn normalize(var data: Data) -> Data {
+    // data is owned here and may be modified locally
+    ...
+    return move data
+}
+
+var data = load()
+data = normalize(move data)
+```
+
+The caller therefore makes mutation of its own binding explicit through assignment.
+
+A function cannot directly mutate an ordinary variable owned by another scope.
+
+For copyable values the same pattern may be used without `move`:
+
+```text
+fn increment(value: int) -> int {
+    return value + 1
+}
+
+var count = 10
+count = increment(count)
+```
+
+This rule avoids mutable-alias tracking, mutable-borrow lifetime rules, and hidden cross-scope mutation.
+
+It also makes call sites distinguish read-only use from ownership-transforming use:
+
+```text
+inspect(&data)               // read only
+data = process(move data)    // transfer, transform, replace
+```
+
+The guiding rule is:
+
+> A function may read borrowed state, or own and transform a value; it does not mutate another scope's ordinary binding through a mutable reference.
+
+
+## 38. Not decided yet
 
 The following areas are still open:
 
