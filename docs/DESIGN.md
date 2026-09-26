@@ -2041,7 +2041,7 @@ var activeUsers: int = 0
 
 Top-level values belong to their module rather than to a hidden process-wide namespace.
 
-Module visibility is defined explicitly with `private` or `public`.
+Module visibility is `private` by default; `public` must be written explicitly.
 
 A value may be accessed from another module only when:
 
@@ -2139,17 +2139,19 @@ The guiding rule is:
 
 ## 43. Module visibility
 
-Top-level declarations have explicit module visibility.
+Top-level declarations have module visibility.
 
 Fast compile uses two visibility levels:
 
 - `private`: accessible only from within the same module;
 - `public`: accessible from other modules that explicitly import the declaring module.
 
+If no visibility keyword is written, the declaration is `private` by default.
+
 This applies to top-level functions, structs, enums, constants, variables, and other exported declarations.
 
 ```text
-private fn helper(value: int) -> int {
+fn helper(value: int) -> int {
     ...
 }
 
@@ -2158,7 +2160,7 @@ public fn run(void) {
 }
 ```
 
-A private declaration may be used by any source file that belongs to the same module.
+A private declaration, including any declaration with no visibility keyword, may be used by any source file that belongs to the same module.
 
 It is not visible through imports.
 
@@ -2195,7 +2197,7 @@ Cross-module access remains module-qualified with `::`; imports do not inject pu
 
 The guiding rule is:
 
-> Private stays inside the module. Public becomes reachable only through an explicit import and module qualification.
+> Unmarked declarations stay private. Only explicitly public declarations become reachable through an import and module qualification.
 
 
 ## 44. Not decided yet
