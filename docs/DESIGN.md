@@ -2485,15 +2485,17 @@ The alias changes only the package qualifier.
 
 ### Same-package references
 
-Files inside the same package do not need to import their own package.
-
-They may refer to a public sibling file module directly by file-module name.
+Files inside the same package must still import their own package when they access another file module.
 
 ```text
 // server/user.fscm
 
-post::letter()
+import server
+
+server.post::letter()
 ```
+
+This keeps all cross-file dependencies explicit, even when both files are in the same directory/package.
 
 Private declarations remain private to their own file and are not reachable from sibling files.
 
@@ -2566,7 +2568,7 @@ Compiled interface metadata may internally load dependency interfaces needed to 
 
 The guiding rule is:
 
-> You may directly use only the packages you imported yourself, plus sibling file modules in your own package.
+> You may directly use only the packages you imported yourself. Cross-file access always requires an import, even inside the same package.
 
 
 ## 49. Not decided yet
