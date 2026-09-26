@@ -80,6 +80,29 @@ The goal is not merely "compile faster than C++". It is:
 > Compile dramatically faster on large projects while remaining a fast native systems language.
 
 
+### Correctness reduces total build time
+
+Fast compile treats compiler correctness and clear diagnostics as part of build performance.
+
+A compiler that finishes quickly but frequently miscompiles code, crashes, invalidates caches incorrectly, or reports errors poorly causes developers to rebuild repeatedly and loses the time saved by fast compilation.
+
+The compiler and language should therefore prioritize:
+
+- deterministic compilation;
+- conservative, correct incremental-cache invalidation;
+- precise local diagnostics;
+- avoiding undefined or ambiguous language behavior where practical;
+- strong validation of compiler-generated metadata and object files;
+- reproducible tests for parser, type checker, ownership rules, incremental builds, and code generation;
+- differential testing between the lightweight backend and LLVM where possible.
+
+The fast path must not depend on skipping correctness checks that are required for valid compilation.
+
+The guiding rule is:
+
+> The fastest build is the build that is both quick and correct the first time.
+
+
 ### Large-project compilation is the primary target
 
 Fast compile is primarily designed to reduce build times in large codebases where compilation can take many minutes or hours.
