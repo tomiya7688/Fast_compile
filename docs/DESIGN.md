@@ -462,6 +462,45 @@ The guiding rule is:
 
 > Core string operations are byte-oriented; Unicode-aware behavior is explicit.
 
+
+### String ownership
+
+`string` is a move-only type.
+
+A string literal refers to UTF-8 bytes stored in static program data and does not require heap allocation.
+
+```text
+const name = "Fast compile"
+```
+
+The value is still a `string` and still follows move-only rules; the only difference is that its backing storage is marked as static, so destruction does not free those bytes.
+
+A string created dynamically, such as by concatenation or a standard-library operation, owns heap storage and releases that storage when ownership ends.
+
+Conceptually, a string contains:
+
+```text
+data pointer
+byte length
+storage kind/tag
+```
+
+The implementation may encode the storage kind without increasing the representation size, for example by using a spare tag bit where the target ABI permits it. The language specification does not require a particular encoding.
+
+There is no reference counting and no implicit copy of string data.
+
+```text
+const a = make_string()
+const b = a      // compile error
+const c = move a // allowed
+```
+
+String literals may be reused or deduplicated by the compiler because their bytes are immutable static data.
+
+The guiding rule for ownership is:
+
+> Every `string` obeys the same move-only semantics; only the backing storage's destruction behavior differs.
+
 ## 16. Arrays and slices
 
 Fast compile distinguishes owning arrays from borrowed slices.
