@@ -761,25 +761,50 @@ The guiding rule is:
 
 Fast compile treats large-project build scalability as a core language/toolchain concern.
 
-### Files and modules
+### Packages, file modules, and compilation units
 
-A source file is both an independently compilable source unit and a module.
+A `.fscm` source file is an independently compilable source unit and a file module.
 
-Fast compile uses a one-file-one-module model.
-
-The module name is derived from the source file's project-relative path rather than declared inside the file.
+A directory is a package and is the unit named by `import`.
 
 For example:
 
 ```text
-server.fscm              -> server
-graphics/renderer.fscm   -> graphics.renderer
-net/http.fscm            -> net.http
+server/
+├─ post.fscm
+├─ user.fscm
+└─ config.fscm
 ```
 
-Source-file and directory path segments used as module names must be valid Fast compile identifiers.
+defines package `server` with file modules:
 
-Changing one source file affects only that file/module and the external symbols that actually depend on its changed public interface.
+```text
+server.post
+server.user
+server.config
+```
+
+External source code imports the package:
+
+```text
+import server
+```
+
+and names a public symbol by package, file module, and symbol:
+
+```text
+server.post::letter
+server.user::find
+server.config::MaxUsers
+```
+
+The file remains the compilation unit. Importing a package does not mean all source files in that directory are reparsed or recompiled.
+
+Package/interface metadata provides a compact index of available file modules and public symbols, while actual dependency tracking remains at file/symbol granularity.
+
+A nested directory is a separate package. Importing `server` does not implicitly import `server.admin` or other child packages.
+
+Changing one source file affects only that file module and the external symbols that actually depend on its changed public interface.
 
 ### Explicit public API
 
@@ -2116,8 +2141,8 @@ A double colon (`::`) accesses an exported symbol from a module or namespace.
 ```text
 import server_state
 
-print(server_state::activeUsers)
-server_state::activeUsers = 10
+print(server_state.state::activeUsers)
+server_state.state::activeUsers = 10
 ```
 
 The distinction is intentional:
@@ -2130,7 +2155,7 @@ module::symbol      // symbol exported by a module
 The two forms may be combined when a module-level value is a struct.
 
 ```text
-graphics::settings.resolution
+graphics.config::settings.resolution
 ```
 
 Here:
@@ -2147,18 +2172,18 @@ The guiding rule is:
 > Use `.` for values and `::` for namespaces/modules.
 
 
-## 43. Module visibility
+## 43. Visibility
 
-Top-level declarations have module visibility.
+Top-level declarations belong to their `.fscm` file module.
 
 Fast compile uses two visibility levels:
 
-- `private`: accessible only from within the same source file/module;
-- `public`: accessible from other modules that explicitly import the declaring file/module.
+- `private`: accessible only within the same file module;
+- `public`: accessible from other file modules once the containing package is imported where necessary.
 
 If no visibility keyword is written, the declaration is `private` by default.
 
-This applies to top-level functions, structs, enums, constants, variables, and other exported declarations.
+This applies to top-level functions, structs, enums, constants, variables, and other declarations.
 
 ```text
 fn helper(value: int) -> int {
@@ -2170,44 +2195,41 @@ public fn run(void) {
 }
 ```
 
-A private declaration, including any declaration with no visibility keyword, may be used only within the same source file/module.
+A private declaration, including any declaration with no visibility keyword, may be used only within the same `.fscm` file.
 
-It is not visible through imports.
+A public declaration may be referenced from another file module.
 
-A public declaration becomes available to another module only after that module explicitly imports the declaring module.
+From outside the package, the caller must import the package and qualify the reference with package + file module:
 
 ```text
 import server
 
-server::run()
+server.post::run()
 ```
 
-Importing a module does not expose its private declarations.
+Importing the package does not expose private declarations.
 
 ```text
-server::helper(10) // compile error: helper is private
+server.post::helper(10) // compile error: helper is private
 ```
 
-Public module-level values follow their mutability rules:
+Public file-level values follow their mutability rules:
 
 ```text
 public const MaxUsers: int = 1000
 public var activeUsers: int = 0
 ```
 
-After importing the module:
+From another package:
 
 ```text
-print(server::MaxUsers)       // allowed
-server::activeUsers = 10      // allowed
-server::MaxUsers = 20         // compile error
+print(server.config::MaxUsers)
+server.state::activeUsers = 10
 ```
-
-Cross-module access remains module-qualified with `::`; imports do not inject public symbols directly into the local namespace.
 
 The guiding rule is:
 
-> Unmarked declarations stay private. Only explicitly public declarations become reachable through an import and module qualification.
+> A file is encapsulated by default; only explicitly public declarations cross the file boundary.
 
 
 ## 44. Module initialization
@@ -2412,138 +2434,139 @@ The guiding rule is:
 > Nested structs are ordinary values; recursive by-value layouts are not allowed.
 
 
-## 47. Module and import syntax
+## 47. Package import and file-module syntax
 
 Fast compile does not use a `module` declaration keyword.
 
-Each `.fscm` file is a module, and its module name is derived from its project-relative file path.
+The filesystem defines names:
 
 ```text
-server.fscm              -> server
-graphics/renderer.fscm   -> graphics.renderer
-net/http.fscm            -> net.http
+server/post.fscm             -> package server, module post
+graphics/renderer.fscm      -> package graphics, module renderer
+net/http.fscm                -> package net, module http
+server/admin/user.fscm      -> package server.admin, module user
 ```
 
-A module dependency is declared explicitly with `import`.
+A dependency on a package is declared with `import`.
 
 ```text
 import server
-import graphics.renderer
-import net.http
+import graphics
+import net
 ```
 
-Imported modules are accessed through module qualification with `::`.
+A public symbol is accessed as:
 
 ```text
-server::run()
-graphics.renderer::draw()
-net.http::get()
+package.file::symbol
 ```
+
+Examples:
+
+```text
+server.post::letter
+graphics.renderer::draw
+net.http::get
+```
+
+This deliberately keeps the source file that defines a symbol visible at the use site.
 
 ### Import aliases
 
-A module import may declare a local alias with `as`.
+A package import may declare a local alias with `as`.
 
 ```text
-import graphics.renderer as render
+import graphics as gfx
 
-render::draw()
+gfx.renderer::draw()
 ```
 
-The alias changes only the local spelling used to qualify symbols. It does not merge imported symbols into the local namespace.
+The alias changes only the package qualifier.
 
-### No wildcard imports
+### Same-package references
 
-Fast compile v0.1 does not support wildcard imports or import-all syntax.
+Files inside the same package do not need to import their own package.
 
-Forms conceptually equivalent to the following are not allowed:
+They may refer to a public sibling file module directly by file-module name.
 
 ```text
-import graphics.renderer::*
-import *
+// server/user.fscm
+
+post::letter()
 ```
 
-Imported public symbols remain qualified through the module name or its explicit alias.
+Private declarations remain private to their own file and are not reachable from sibling files.
 
-### No implicit symbol injection
+### No recursive folder import
 
-Importing a module never makes its public names directly visible as unqualified local names.
+Importing a package exposes only that exact directory/package.
 
 ```text
 import server
-
-run()         // compile error
-server::run() // allowed
 ```
 
-### File path is module identity
+does not import `server.admin`.
 
-Renaming or moving a source file changes its module identity and therefore requires updating imports that refer to that module.
+To use a child package:
 
-There is no second in-source module name that can disagree with the file path.
+```text
+import server.admin
+
+server.admin.user::create()
+```
+
+### No wildcard imports or symbol injection
+
+Fast compile v0.1 does not support wildcard imports.
+
+```text
+import server::*
+import *
+```
+
+are invalid.
+
+Importing a package also never injects file modules or symbols as unqualified local names.
 
 The guiding rule is:
 
-> The file is the module; imports name files through their project-relative module paths.
+> Import packages for convenience, but keep the defining file explicit at every cross-file symbol use.
 
 
 ## 48. Imports are not transitive
 
-Fast compile imports are direct dependencies only.
+Fast compile package imports are direct dependencies only.
 
-If module A imports module B, and module C imports module A, module C does not automatically gain access to module B.
+If package `server` imports package `database`, and another package imports `server`, the importer does not automatically gain source-level access to `database`.
 
 ```text
-// b.fscm
-public fn work(void) {
-    ...
-}
+// application/main.fscm
+
+import server
+
+server.post::send()       // allowed
+database.query::run()     // compile error: database is not imported
 ```
 
-```text
-// a.fscm
-import b
-
-public fn run(void) {
-    b::work()
-}
-```
+To use `database` directly, the file/package must import it explicitly.
 
 ```text
-// c.fscm
-import a
+import server
+import database
 
-a::run()  // allowed
-b::work() // compile error: b is not imported
-```
-
-If module C wants to use module B directly, it must import B explicitly.
-
-```text
-import a
-import b
-
-a::run()
-b::work()
+server.post::send()
+database.query::run()
 ```
 
 Imports are not re-exported in v0.1.
 
-A module cannot make another module's namespace implicitly available to its importers.
+A package also does not recursively expose child packages merely because of directory nesting.
 
-### Public APIs that reference external types
-
-A public declaration may reference a public type from another module that it directly imports.
-
-The compiled interface records that external type identity and the compiler may load the required dependency interface metadata internally.
-
-However, source-level access remains non-transitive: a caller that wants to name or access that external module directly must still import it explicitly.
-
-This distinction keeps dependency metadata sufficient for compilation without making source-level namespaces leak through imports.
+Compiled interface metadata may internally load dependency interfaces needed to describe public signatures, but that does not grant source-level namespace access.
 
 The guiding rule is:
 
-> You may use only the modules you imported yourself.
+> You may directly use only the packages you imported yourself, plus sibling file modules in your own package.
 
 
 ## 49. Not decided yet
