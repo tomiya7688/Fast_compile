@@ -2081,7 +2081,65 @@ The guiding rule is:
 > Global state exists only as explicit module state, and cross-module access requires an explicit dependency.
 
 
-## 42. Not decided yet
+## 42. Member access and module qualification
+
+Fast compile uses different syntax for value/member access and module/name qualification.
+
+### Value and struct member access
+
+A dot (`.`) accesses a member of a value or struct.
+
+```text
+struct User {
+    name: string
+}
+
+var user = User {
+    name: "Taro"
+}
+
+print(user.name)
+```
+
+### Module qualification
+
+A double colon (`::`) accesses an exported symbol from a module or namespace.
+
+```text
+import server_state
+
+print(server_state::activeUsers)
+server_state::activeUsers = 10
+```
+
+The distinction is intentional:
+
+```text
+value.member        // member of a value
+module::symbol      // symbol exported by a module
+```
+
+The two forms may be combined when a module-level value is a struct.
+
+```text
+graphics::settings.resolution
+```
+
+Here:
+
+```text
+graphics::settings  // module-qualified value
+.resolution         // field access on that value
+```
+
+This keeps namespace resolution visually separate from data access.
+
+The guiding rule is:
+
+> Use `.` for values and `::` for namespaces/modules.
+
+
+## 43. Not decided yet
 
 The following areas are still open:
 
