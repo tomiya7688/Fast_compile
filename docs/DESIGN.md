@@ -1875,6 +1875,22 @@ for var i = 0; i < 100; i = i + 1 {
 }
 ```
 
+The condition expression must have type `bool`.
+
+```text
+for var i = 0; i < 100; i = i + 1 {
+    ...
+}
+// valid because i < 100 is bool
+```
+
+```text
+for var i = 0; i; i = i + 1 {
+    ...
+}
+// compile error: int is not bool
+```
+
 This form is preferred when the progression of a loop variable should be visible at the loop header.
 
 ### Collection loop
@@ -1898,6 +1914,8 @@ for condition {
     ...
 }
 ```
+
+Here too, `condition` must have type `bool`.
 
 ### Infinite loop
 
