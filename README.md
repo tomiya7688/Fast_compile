@@ -6,6 +6,27 @@
 
 The project intentionally prefers simple, predictable language rules over expensive compiler analysis.
 
+
+## Core priorities
+
+Fast compile is built around four priorities, in this order:
+
+1. **The compiler itself should be reliable.**  
+   A fast compiler that crashes, miscompiles code, or produces unreliable incremental results only creates more rebuilds.
+
+2. **The language should prevent avoidable bugs.**  
+   Features such as automatic destruction are primarily there to remove common classes of mistakes such as forgotten frees, use-after-free patterns, and ownership confusion without requiring expensive global analysis.
+
+3. **Compilation should be fast, especially at large scale.**  
+   The toolchain should avoid unnecessary parsing, analysis, recompilation, template-style expansion, and whole-program work.
+
+4. **Generated programs should remain reasonably small and fast.**  
+   Fast compile targets native code, a small runtime footprint, predictable costs, and good performance without requiring a large VM, GC, or mandatory runtime scheduler.
+
+In short:
+
+> Reliable compiler. Safer language. Fast builds. Lightweight native programs.
+
 ## Current direction
 
 The first confirmed design work is the memory model:
