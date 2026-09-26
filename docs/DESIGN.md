@@ -1982,6 +1982,23 @@ The guiding rule is:
 
 A function with no return value may omit the return annotation entirely.
 
+A function with no parameters may use either an empty parameter list or `void`.
+
+```text
+fn start() {
+    ...
+}
+
+fn start(void) {
+    ...
+}
+```
+
+These two forms are semantically equivalent.
+
+Using `void` in the parameter list is only an explicit spelling of "no parameters"; it does not create a parameter and does not make `void` a normal value type.
+
+
 ```text
 fn print_user(user: &User) {
     print(user.name)
@@ -2006,7 +2023,7 @@ return
 
 `void` is not a normal value type in v0.1. Variables, struct fields, arrays, and ordinary values cannot have type `void`.
 
-Its role is only to explicitly state that a function returns no value.
+Its roles are limited to explicitly stating that a function returns no value and explicitly stating that a function takes no parameters.
 
 The guiding rule is:
 
