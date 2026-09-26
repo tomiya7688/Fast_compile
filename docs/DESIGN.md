@@ -683,7 +683,22 @@ Conceptually, the compiler may lower this to an ordinary function call that rece
 
 There is no virtual dispatch, inheritance lookup, runtime method table, or overload resolution involved.
 
-The syntax for methods that consume ownership of the receiver, if needed, is a separate design decision. The default method receiver is read-only.
+Struct methods are always read-only in v0.1.
+
+A method cannot consume ownership of its receiver and cannot mutate receiver fields.
+
+If a value must be transformed, use an ordinary function with explicit ownership transfer and assignment at the call site.
+
+```text
+fn rename_user(var user: User, name: string) -> User {
+    user.name = move name;
+    return move user;
+}
+
+user = rename_user(move user, move name);
+```
+
+This keeps mutating/consuming behavior visibly different from ordinary method calls such as `user.print();`.
 
 Ownership rules apply recursively to struct fields.
 
