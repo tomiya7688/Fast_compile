@@ -763,13 +763,23 @@ Fast compile treats large-project build scalability as a core language/toolchain
 
 ### Files and modules
 
-A source file is an independently compilable source unit.
+A source file is both an independently compilable source unit and a module.
 
-A module is a namespace and dependency boundary that may contain multiple source files.
+Fast compile uses a one-file-one-module model.
 
-Changing one source file must not require reparsing or recompiling every other source file in the same module unless their actual dependencies changed.
+The module name is derived from the source file's project-relative path rather than declared inside the file.
 
-The exact source syntax for declaring and importing modules is still provisional.
+For example:
+
+```text
+server.fscm              -> server
+graphics/renderer.fscm   -> graphics.renderer
+net/http.fscm            -> net.http
+```
+
+Source-file and directory path segments used as module names must be valid Fast compile identifiers.
+
+Changing one source file affects only that file/module and the external symbols that actually depend on its changed public interface.
 
 ### Explicit public API
 
@@ -2143,8 +2153,8 @@ Top-level declarations have module visibility.
 
 Fast compile uses two visibility levels:
 
-- `private`: accessible only from within the same module;
-- `public`: accessible from other modules that explicitly import the declaring module.
+- `private`: accessible only from within the same source file/module;
+- `public`: accessible from other modules that explicitly import the declaring file/module.
 
 If no visibility keyword is written, the declaration is `private` by default.
 
@@ -2160,7 +2170,7 @@ public fn run(void) {
 }
 ```
 
-A private declaration, including any declaration with no visibility keyword, may be used by any source file that belongs to the same module.
+A private declaration, including any declaration with no visibility keyword, may be used only within the same source file/module.
 
 It is not visible through imports.
 
@@ -2404,10 +2414,14 @@ The guiding rule is:
 
 ## 47. Module and import syntax
 
-A source file declares its module with `module`.
+Fast compile does not use a `module` declaration keyword.
+
+Each `.fscm` file is a module, and its module name is derived from its project-relative file path.
 
 ```text
-module server
+server.fscm              -> server
+graphics/renderer.fscm   -> graphics.renderer
+net/http.fscm            -> net.http
 ```
 
 A module dependency is declared explicitly with `import`.
@@ -2462,11 +2476,15 @@ run()         // compile error
 server::run() // allowed
 ```
 
-This keeps name resolution local and makes dependencies visible at each cross-module use site.
+### File path is module identity
+
+Renaming or moving a source file changes its module identity and therefore requires updating imports that refer to that module.
+
+There is no second in-source module name that can disagree with the file path.
 
 The guiding rule is:
 
-> Declare dependencies explicitly, qualify cross-module symbols explicitly, and never import a namespace implicitly.
+> The file is the module; imports name files through their project-relative module paths.
 
 
 ## 48. Not decided yet
