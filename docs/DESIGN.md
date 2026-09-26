@@ -2571,7 +2571,65 @@ The guiding rule is:
 > You may directly use only the packages you imported yourself. Cross-file access always requires an import, even inside the same package.
 
 
-## 49. Not decided yet
+## 49. Conditional branching
+
+Fast compile uses ordinary `if / else if / else` control flow.
+
+```text
+if (score >= 100) {
+    print("high")
+} else if (score >= 50) {
+    print("middle")
+} else {
+    print("low")
+}
+```
+
+The condition of an `if` must have type `bool`.
+
+```text
+if (true) {
+    ...
+}
+```
+
+is valid.
+
+Fast compile does not implicitly convert integers, pointers, strings, or other values to `bool`.
+
+```text
+var x: int = 10
+
+if (x) {
+    ...
+}
+// compile error
+```
+
+The condition must be written explicitly.
+
+```text
+if (x != 0) {
+    ...
+}
+```
+
+Opaque pointers follow the same rule.
+
+```text
+if (pointer != null) {
+    ...
+}
+```
+
+In v0.1, `if` is a control statement rather than a value-producing expression.
+
+The guiding rule is:
+
+> Conditions are always explicit boolean expressions.
+
+
+## 50. Not decided yet
 
 The following areas are still open:
 
