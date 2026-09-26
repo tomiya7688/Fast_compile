@@ -1978,7 +1978,42 @@ The guiding rule is:
 > Operators have fixed built-in meanings; user-defined behavior uses named functions.
 
 
-## 40. Not decided yet
+## 40. Functions without return values
+
+A function with no return value may omit the return annotation entirely.
+
+```text
+fn print_user(user: &User) {
+    print(user.name)
+}
+```
+
+The same function may explicitly write `-> void` when that improves readability.
+
+```text
+fn print_user(user: &User) -> void {
+    print(user.name)
+}
+```
+
+These two forms are semantically equivalent.
+
+A return-without-value statement is written:
+
+```text
+return
+```
+
+`void` is not a normal value type in v0.1. Variables, struct fields, arrays, and ordinary values cannot have type `void`.
+
+Its role is only to explicitly state that a function returns no value.
+
+The guiding rule is:
+
+> No-return functions may stay concise, but `void` may be written when explicitness helps.
+
+
+## 41. Not decided yet
 
 The following areas are still open:
 
