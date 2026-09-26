@@ -2030,7 +2030,58 @@ The guiding rule is:
 > No-return functions may stay concise, but `void` may be written when explicitness helps.
 
 
-## 41. Not decided yet
+## 41. Module-level values
+
+Fast compile allows both `const` and `var` declarations at module/file top level.
+
+```text
+const MaxUsers: int = 1000
+var activeUsers: int = 0
+```
+
+Top-level values belong to their module rather than to a hidden process-wide namespace.
+
+Declarations are private to the module by default.
+
+A value may be accessed from another module only when:
+
+1. the declaring module explicitly exports it; and
+2. the using module explicitly imports the declaring module.
+
+The exact export/import surface syntax is still provisional; examples may use `pub`.
+
+```text
+pub const MaxUsers: int = 1000
+pub var activeUsers: int = 0
+```
+
+An imported public `const` may be read but not changed.
+
+An imported public `var` may be read and assigned to.
+
+External access should remain visibly associated with the imported module namespace rather than becoming an implicit global name.
+
+Conceptually:
+
+```text
+import server_state
+
+print(server_state.activeUsers)
+server_state.activeUsers = 10
+```
+
+If a module is not imported, its public values are not directly readable or writable from that source module.
+
+This keeps global state explicit in the dependency graph and visible at call sites.
+
+Initialization-order rules for non-trivial module-level values are a separate design decision.
+
+The guiding rule is:
+
+> Global state exists only as explicit module state, and cross-module access requires an explicit dependency.
+
+
+## 42. Not decided yet
 
 The following areas are still open:
 
