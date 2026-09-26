@@ -2200,7 +2200,63 @@ The guiding rule is:
 > Unmarked declarations stay private. Only explicitly public declarations become reachable through an import and module qualification.
 
 
-## 44. Not decided yet
+## 44. Module initialization
+
+Fast compile does not execute function calls at module/file top level.
+
+Top-level declarations may use only initializers that are compile-time evaluable.
+
+```text
+var count: int = 0
+const name: string = "server"
+```
+
+These are allowed.
+
+```text
+var config = load_config()
+var socket = open_socket()
+```
+
+These are compile errors because they require runtime function calls during module initialization.
+
+Importing a module never runs hidden initialization code.
+
+If a module needs runtime setup, it exposes an ordinary function and the caller invokes it explicitly.
+
+```text
+// server.fscm
+
+var activeUsers: int = 0
+
+public fn initialize(void) {
+    activeUsers = load_initial_user_count()
+}
+```
+
+```text
+// main.fscm
+
+import server
+
+fn main(void) {
+    server::initialize()
+    ...
+}
+```
+
+This makes initialization order part of ordinary visible control flow rather than an implicit property of the import graph.
+
+Fast compile has no global constructors and no hidden per-module startup functions generated from top-level expressions.
+
+Whether uninitialized module-level storage is ever permitted is a separate design decision; this rule does not imply that ordinary variables may exist without a valid initial value.
+
+The guiding rule is:
+
+> Imports declare dependencies; functions perform runtime initialization.
+
+
+## 45. Not decided yet
 
 The following areas are still open:
 
