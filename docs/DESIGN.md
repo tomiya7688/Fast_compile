@@ -1885,6 +1885,12 @@ for (var i = 0; i < 100; i = i + 1) {
 
 The three clauses are separated by exactly two semicolons.
 
+The initialization clause may contain at most one initialization statement.
+
+The step clause may contain at most one mutation/update statement.
+
+Fast compile does not provide a comma operator or a comma-separated list of multiple initialization/update statements in the `for` header.
+
 Each clause may be omitted.
 
 If the condition clause is present, it must have type `bool`.
@@ -1904,6 +1910,20 @@ for (var i = 0; i; i = i + 1) {
 ```
 
 An omitted condition is treated as `true`.
+
+
+If multiple values must be initialized or updated, the additional work is written outside the header or explicitly in the loop body.
+
+```text
+var j = 100
+
+for (var i = 0; i < 100; i = i + 1) {
+    j = j - 1
+    ...
+}
+```
+
+This keeps loop progression visible instead of hiding multiple state changes inside one header clause.
 
 ```text
 for (var i = 0; ; i = i + 1) {
