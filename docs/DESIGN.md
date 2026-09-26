@@ -1824,7 +1824,75 @@ The guiding rule is:
 > A function may read borrowed state, or own and transform a value; it does not mutate another scope's ordinary binding through a mutable reference.
 
 
-## 38. Not decided yet
+## 38. Loop syntax
+
+Fast compile uses `for` as its loop construct.
+
+There is no separate `while` keyword in v0.1.
+
+### Counted / conditional loop
+
+The ordinary counted form keeps initialization, condition, and step together.
+
+```text
+for var i = 0; i < 100; i = i + 1 {
+    process(i)
+}
+```
+
+This form is preferred when the progression of a loop variable should be visible at the loop header.
+
+### Collection loop
+
+Arrays and slices may be traversed with `for ... in ...`.
+
+```text
+for value in values {
+    process(value)
+}
+```
+
+v0.1 does not require a general user-defined iterator protocol merely to support this syntax. The initial form is defined for built-in array/slice-style collections.
+
+### Condition-only loop
+
+A condition-only loop uses `for` directly.
+
+```text
+for condition {
+    ...
+}
+```
+
+### Infinite loop
+
+An infinite loop is written:
+
+```text
+for {
+    ...
+}
+```
+
+### No increment/decrement operators
+
+Fast compile v0.1 has no `++` or `--` operators.
+
+Changes are written explicitly:
+
+```text
+i = i + 1
+i = i - 1
+```
+
+This avoids special prefix/postfix mutation operators and keeps state changes visually explicit.
+
+The guiding rule is:
+
+> Use one loop construct, and write loop-variable changes explicitly.
+
+
+## 39. Not decided yet
 
 The following areas are still open:
 
