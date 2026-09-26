@@ -1861,13 +1861,11 @@ The guiding rule is:
 
 ## 38. Loop syntax
 
-Fast compile uses `for` as its loop construct.
+Fast compile uses both `for` and `while`, with distinct roles.
 
-There is no separate `while` keyword in v0.1.
+### for
 
-### General for form
-
-The general form is:
+A `for` loop is always the three-clause form:
 
 ```text
 for (initialization; condition; step) {
@@ -1883,23 +1881,21 @@ for (var i = 0; i < 100; i = i + 1) {
 }
 ```
 
-The three clauses are separated by exactly two semicolons.
+The clauses are separated by exactly two semicolons.
 
 The initialization clause may contain at most one initialization statement.
 
 The step clause may contain at most one mutation/update statement.
 
-Fast compile does not provide a comma operator or a comma-separated list of multiple initialization/update statements in the `for` header.
+Fast compile does not provide a comma operator or comma-separated multiple initialization/update statements in the `for` header.
 
-Each clause may be omitted.
-
-If the condition clause is present, it must have type `bool`.
+The condition clause must have type `bool`.
 
 ```text
 for (var i = 0; i < 100; i = i + 1) {
     ...
 }
-// valid because i < 100 is bool
+// valid
 ```
 
 ```text
@@ -1909,10 +1905,19 @@ for (var i = 0; i; i = i + 1) {
 // compile error: int is not bool
 ```
 
+The initialization and step clauses may be omitted.
+
 An omitted condition is treated as `true`.
 
+```text
+for (;;) {
+    ...
+}
+```
 
-If multiple values must be initialized or updated, the additional work is written outside the header or explicitly in the loop body.
+is therefore an infinite loop.
+
+If multiple values must be initialized or updated, additional work is written outside the header or explicitly in the loop body.
 
 ```text
 var j = 100
@@ -1923,75 +1928,41 @@ for (var i = 0; i < 100; i = i + 1) {
 }
 ```
 
-This keeps loop progression visible instead of hiding multiple state changes inside one header clause.
+### while
+
+A `while` loop has exactly one condition expression:
 
 ```text
-for (var i = 0; ; i = i + 1) {
-    ...
-}
-```
-
-### Condition-only shorthand
-
-A condition-only loop may be written without the empty initialization and step clauses:
-
-```text
-for (condition) {
-    ...
-}
-```
-
-This is equivalent to:
-
-```text
-for (; condition; ) {
+while (condition) {
     ...
 }
 ```
 
 The condition must have type `bool`.
 
-### Infinite loop
-
-The full empty-clause form:
-
 ```text
-for (;;) {
+while (true) {
     ...
 }
 ```
 
-has an omitted condition and is therefore an infinite loop.
+is an infinite loop.
 
-The following forms are also equivalent:
+There is no implicit conversion from integers, pointers, strings, or other values to `bool`.
+
+### Collection traversal
+
+Fast compile v0.1 does not have a special `for ... in ...` collection loop.
+
+Arrays and slices are traversed using the normal three-clause `for` form.
 
 ```text
-for (; true; ) {
-    ...
-}
-
-for (true) {
-    ...
-}
-
-for {
-    ...
+for (var i = 0; i < values.length; i = i + 1) {
+    process(values[i])
 }
 ```
 
-`for { ... }` is only a shorthand for the infinite-loop form.
-
-### Collection loop
-
-Arrays and slices may be traversed with `for ... in ...`.
-
-```text
-for (value in values) {
-    process(value)
-}
-```
-
-v0.1 does not require a general user-defined iterator protocol merely to support this syntax. The initial form is defined for built-in array/slice-style collections.
+This keeps collection traversal expressed with the same explicit initialization, condition, and progression rules as other counted loops and avoids requiring an iterator protocol.
 
 ### No increment/decrement operators
 
@@ -2004,11 +1975,9 @@ i = i + 1
 i = i - 1
 ```
 
-This avoids special prefix/postfix mutation operators and keeps state changes visually explicit.
-
 The guiding rule is:
 
-> Use one loop construct, keep the three-clause form explicit when useful, and allow empty clauses where their meaning is unambiguous.
+> Use `for` for explicit initialization/condition/progression loops, and `while` for condition-driven loops.
 
 
 ## 39. Operators
