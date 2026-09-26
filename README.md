@@ -44,13 +44,22 @@ Very early design stage. Syntax, type system, compiler backend, standard library
 
 Fast compile is developed by the same author as Bitlang, but it is intentionally **not part of the Bitlang language family**.
 
-The two projects pursue nearly opposite compiler-design priorities.
+The two projects pursue almost opposite ideas of what a compiler should become.
 
-Bitlang emphasizes explicit, inspectable lowering stages and stable intermediate artifact boundaries. Fast compile instead prioritizes minimizing compilation work, avoiding unnecessary analysis and runtime machinery, and scaling to very large native projects with extremely short rebuild times.
+Bitlang deliberately expands compilation into a large and highly capable transformation system. Its preprocessor and compiler are intended to go far beyond ordinary parsing and static analysis, moving toward sophisticated source-to-source transformation and text-processing behavior that approaches a lightweight text-AI-like role.
+
+That design gives Bitlang broad compatibility, translation flexibility, and the ability to reshape source through rich intermediate processing.
+
+Fast compile intentionally gives up most of that flexibility.
+
+It avoids broad compatibility layers, open-ended source transformation, expensive analysis, large compile-time execution systems, and other machinery that would make compilation harder to predict or scale.
 
 In short:
 
-- **Bitlang:** make translation stages explicit and inspectable.
-- **Fast compile:** make compilation work as small, local, parallel, and cacheable as possible.
+- **Bitlang:** make compilation itself extremely powerful, flexible, and transformative.
+- **Fast compile:** remove as much compilation work as possible while preserving a useful, fast native language.
 
-They may share an author and some engineering lessons, but Fast compile is a separate language lineage with a deliberately different design philosophy.
+Fast compile is therefore not a reduced Bitlang implementation. It is a separate language lineage created by choosing the opposite tradeoff.
+
+Both approaches have value: Bitlang explores how much capability can be placed into compilation, while Fast compile explores how much capability can be removed while still producing a practical large-scale systems language.
+
