@@ -477,15 +477,41 @@ The value is still a `string` and still follows move-only rules; the only differ
 
 A string created dynamically, such as by concatenation or a standard-library operation, owns heap storage and releases that storage when ownership ends.
 
-Conceptually, a string contains:
+The string representation is fixed for 64-bit targets as two machine words:
 
 ```text
-data pointer
-byte length
-storage kind/tag
+data pointer       // 64 bits
+tagged byte length // 64 bits
 ```
 
-The implementation may encode the storage kind without increasing the representation size, for example by using a spare tag bit where the target ABI permits it. The language specification does not require a particular encoding.
+The most-significant bit of the length word is the ownership bit.
+
+```text
+ownership bit = 0 -> backing bytes are not heap-owned by this string
+ownership bit = 1 -> backing bytes are heap-owned and must be freed on destruction
+remaining 63 bits -> UTF-8 byte length
+```
+
+Therefore a `string` is 16 bytes on x86-64 and other 64-bit targets using this representation.
+
+A string literal points directly into immutable static program data and has ownership bit 0.
+
+A dynamically created string points to allocator-owned memory and has ownership bit 1.
+
+On destruction:
+
+```text
+if ownership bit == 1:
+    fc_free(data pointer)
+else:
+    do nothing
+```
+
+The maximum string length represented by this layout is `2^63 - 1` bytes.
+
+String contents are immutable. A `var string` permits rebinding the variable to another string value; it does not make the referenced UTF-8 bytes mutable. Operations such as concatenation create a new string value.
+
+Because strings are immutable, the core `string` representation does not store capacity. Builders or mutable byte buffers, when needed, belong in separate standard-library types such as dynamic byte arrays.
 
 There is no reference counting and no implicit copy of string data.
 
