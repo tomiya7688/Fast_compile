@@ -2487,7 +2487,66 @@ The guiding rule is:
 > The file is the module; imports name files through their project-relative module paths.
 
 
-## 48. Not decided yet
+## 48. Imports are not transitive
+
+Fast compile imports are direct dependencies only.
+
+If module A imports module B, and module C imports module A, module C does not automatically gain access to module B.
+
+```text
+// b.fscm
+public fn work(void) {
+    ...
+}
+```
+
+```text
+// a.fscm
+import b
+
+public fn run(void) {
+    b::work()
+}
+```
+
+```text
+// c.fscm
+import a
+
+a::run()  // allowed
+b::work() // compile error: b is not imported
+```
+
+If module C wants to use module B directly, it must import B explicitly.
+
+```text
+import a
+import b
+
+a::run()
+b::work()
+```
+
+Imports are not re-exported in v0.1.
+
+A module cannot make another module's namespace implicitly available to its importers.
+
+### Public APIs that reference external types
+
+A public declaration may reference a public type from another module that it directly imports.
+
+The compiled interface records that external type identity and the compiler may load the required dependency interface metadata internally.
+
+However, source-level access remains non-transitive: a caller that wants to name or access that external module directly must still import it explicitly.
+
+This distinction keeps dependency metadata sufficient for compilation without making source-level namespaces leak through imports.
+
+The guiding rule is:
+
+> You may use only the modules you imported yourself.
+
+
+## 49. Not decided yet
 
 The following areas are still open:
 
