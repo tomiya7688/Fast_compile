@@ -1870,7 +1870,7 @@ There is no separate `while` keyword in v0.1.
 The ordinary counted form keeps initialization, condition, and step together.
 
 ```text
-for var i = 0; i < 100; i = i + 1 {
+for (var i = 0; i < 100; i = i + 1) {
     process(i)
 }
 ```
@@ -1878,14 +1878,14 @@ for var i = 0; i < 100; i = i + 1 {
 The condition expression must have type `bool`.
 
 ```text
-for var i = 0; i < 100; i = i + 1 {
+for (var i = 0; i < 100; i = i + 1) {
     ...
 }
 // valid because i < 100 is bool
 ```
 
 ```text
-for var i = 0; i; i = i + 1 {
+for (var i = 0; i; i = i + 1) {
     ...
 }
 // compile error: int is not bool
@@ -1898,7 +1898,7 @@ This form is preferred when the progression of a loop variable should be visible
 Arrays and slices may be traversed with `for ... in ...`.
 
 ```text
-for value in values {
+for (value in values) {
     process(value)
 }
 ```
@@ -1910,7 +1910,7 @@ v0.1 does not require a general user-defined iterator protocol merely to support
 A condition-only loop uses `for` directly.
 
 ```text
-for condition {
+for (condition) {
     ...
 }
 ```
@@ -1927,6 +1927,8 @@ for {
 }
 ```
 
+Parentheses are used whenever a `for` loop has a header expression or clause. The headerless infinite loop keeps the compact `for { ... }` form.
+
 ### No increment/decrement operators
 
 Fast compile v0.1 has no `++` or `--` operators.
@@ -1942,7 +1944,7 @@ This avoids special prefix/postfix mutation operators and keeps state changes vi
 
 The guiding rule is:
 
-> Use one loop construct, and write loop-variable changes explicitly.
+> Use one loop construct, put loop headers in parentheses, and write loop-variable changes explicitly.
 
 
 ## 39. Operators
