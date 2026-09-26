@@ -660,6 +660,16 @@ fn User.print(void) -> void {
 
 Inside the method body, `this` is an implicit read-only receiver referring to the value on which the method was called.
 
+
+The implicit receiver supports ordinary member access and method calls.
+
+```text
+this.name;     // field access
+this.print();  // call another method on the same receiver
+```
+
+A call such as `this.print()` uses the same receiver value; it does not create a new object or perform dynamic dispatch.
+
 ```text
 const user = User {
     id: 1,
