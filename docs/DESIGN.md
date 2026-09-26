@@ -1892,7 +1892,76 @@ The guiding rule is:
 > Use one loop construct, and write loop-variable changes explicitly.
 
 
-## 39. Not decided yet
+## 39. Operators
+
+Fast compile v0.1 provides only built-in operators with fixed language-defined meanings.
+
+The initial operator set includes:
+
+```text
++  -  *  /  %
+== !=
+<  <=  >  >=
+&& || !
+&  |  ^  ~
+<< >>
+```
+
+### No user-defined operator overloading
+
+Users cannot redefine operators for structs or other user-defined types.
+
+For example:
+
+```text
+struct Vec2 {
+    x: float
+    y: float
+}
+
+const a = Vec2 { x: 1.0, y: 2.0 }
+const b = Vec2 { x: 3.0, y: 4.0 }
+
+const c = a + b // compile error
+```
+
+The compiler does not search for a hidden user-defined meaning of `+` for `Vec2`.
+
+If a project wants vector addition, it uses an ordinary named function:
+
+```text
+fn add_vec2(a: Vec2, b: Vec2) -> Vec2 {
+    return Vec2 {
+        x: a.x + b.x,
+        y: a.y + b.y
+    }
+}
+
+const c = add_vec2(a, b)
+```
+
+This keeps operator resolution local and predictable.
+
+### Short-circuit boolean operators
+
+`&&` and `||` use short-circuit evaluation.
+
+```text
+if condition_a && condition_b {
+    ...
+}
+```
+
+`condition_b` is evaluated only if `condition_a` is true.
+
+For `||`, the right side is evaluated only if the left side is false.
+
+The guiding rule is:
+
+> Operators have fixed built-in meanings; user-defined behavior uses named functions.
+
+
+## 40. Not decided yet
 
 The following areas are still open:
 
