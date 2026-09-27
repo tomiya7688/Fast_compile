@@ -2990,7 +2990,47 @@ The guiding rule is:
 > One function name means one function per file module.
 
 
-## 54. Not decided yet
+## 54. Program entry point
+
+Fast compile executable programs use a function named `main` as the entry point.
+
+v0.1 supports exactly two source-level forms.
+
+A no-return `main`:
+
+```text
+fn main(void) {
+    ...
+}
+```
+
+successfully returns process exit code `0` when control reaches the end of the function.
+
+An explicit integer-returning `main`:
+
+```text
+fn main(void) -> int {
+    ...
+    return 0;
+}
+```
+
+returns that `int` value as the process exit code.
+
+No other `main` signature is valid in v0.1.
+
+Command-line arguments are not passed as implicit parameters to `main`.
+
+Programs that need command-line arguments obtain them explicitly through the standard library/platform API.
+
+This keeps the entry-point ABI small and avoids forcing argument-string allocation or conversion into every executable.
+
+The guiding rule is:
+
+> main starts the program; optional process input comes from explicit library APIs.
+
+
+## 55. Not decided yet
 
 The following areas are still open:
 
