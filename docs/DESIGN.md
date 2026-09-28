@@ -3194,7 +3194,67 @@ The guiding rule is:
 > Concrete data values compare by their actual contents, with early exit on the first difference.
 
 
-## 56. Not decided yet
+## 56. Ordering comparison
+
+Fast compile supports `<`, `<=`, `>`, and `>=` only for types with a fixed built-in ordering.
+
+The supported types are:
+
+- numeric types;
+- `string`.
+
+### Numeric ordering
+
+Numeric operands must already have compatible types.
+
+Fast compile does not perform implicit numeric conversion merely to compare values.
+
+```text
+const a: int = 10;
+const b: int = 20;
+
+if (a < b) {
+    ...
+}
+```
+
+### String ordering
+
+Strings are ordered lexicographically by their UTF-8 byte sequences.
+
+```text
+"abc" < "abd" // true
+```
+
+No Unicode normalization, locale-aware collation, or implicit case folding is performed.
+
+### Unsupported ordering
+
+The following types do not have built-in ordering operators in v0.1:
+
+- `bool`;
+- enums;
+- structs;
+- arrays;
+- `Result<T, E>`;
+- `ptr<T>`.
+
+For example:
+
+```text
+user1 < user2              // compile error
+State::Idle < State::Run   // compile error
+pointer1 < pointer2        // compile error
+```
+
+Projects that need domain-specific ordering use ordinary named functions.
+
+The guiding rule is:
+
+> Equality is broadly structural; ordering exists only where the language defines one directly.
+
+
+## 57. Not decided yet
 
 The following areas are still open:
 
