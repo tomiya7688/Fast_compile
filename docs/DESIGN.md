@@ -3030,7 +3030,92 @@ The guiding rule is:
 > main starts the program; optional process input comes from explicit library APIs.
 
 
-## 55. Not decided yet
+## 55. Equality comparison
+
+Fast compile supports `==` and `!=` as built-in value comparisons.
+
+For concrete ordinary data types, equality is structural and may stop as soon as a difference is found.
+
+### Primitive values
+
+Numeric values, booleans, enums, and opaque pointers compare their values directly.
+
+Numeric operands must already have compatible types; equality does not introduce implicit numeric conversion.
+
+```text
+const a: int = 10;
+const b: int = 10;
+
+if (a == b) {
+    ...
+}
+```
+
+`ptr<T>` equality compares pointer values/addresses, including comparison with `null`. It still does not dereference the pointer.
+
+### Strings
+
+Strings compare UTF-8 byte length first and then exact UTF-8 bytes.
+
+```text
+"abc" == "abc" // true
+```
+
+There is no Unicode normalization, locale-aware comparison, or implicit case folding.
+
+An implementation may use an optimized byte-comparison routine and stops once inequality is known.
+
+### Structs
+
+Structs compare fields in declaration order.
+
+```text
+struct Point {
+    x: float;
+    y: float;
+}
+```
+
+Two `Point` values are equal when all corresponding fields are equal.
+
+Comparison stops at the first unequal field.
+
+### Arrays
+
+Fixed-size and dynamic arrays compare element values in order.
+
+Dynamic arrays compare length first; unequal lengths are immediately unequal.
+
+Element comparison stops at the first unequal element.
+
+### Result
+
+Two `Result<T, E>` values are equal when they contain the same active state (`Ok` or `Err`) and their active contained values are equal.
+
+### Floating-point behavior
+
+`float` and `double` equality follows normal IEEE-754 comparison semantics.
+
+In particular, NaN is not equal to itself.
+
+### Generic type parameters
+
+An unconstrained opaque generic type parameter `T` still cannot be compared with `==` inside generic code merely because concrete types commonly support equality.
+
+Fast compile v0.1 does not add generic comparison constraints solely for this feature.
+
+### Runtime cost
+
+Equality of scalar values is constant-time.
+
+Equality of strings, arrays, or nested structs may take time proportional to the data compared, but comparison exits immediately once inequality is established.
+
+The guiding rule is:
+
+> Concrete data values compare by their actual contents, with early exit on the first difference.
+
+
+## 56. Not decided yet
 
 The following areas are still open:
 
