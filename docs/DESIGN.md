@@ -103,6 +103,34 @@ The guiding rule is:
 > The fastest build is the build that is both quick and correct the first time.
 
 
+### Compilation performance target
+
+Fast compile aims to be faster to compile than Go, not merely faster than C++.
+
+The performance target is:
+
+- clearly outperform C++ build times on large projects;
+- outperform Go for incremental rebuilds as an early hard requirement;
+- ultimately outperform Go for clean builds as well.
+
+Because the language is named Fast compile, build speed is not only an implementation detail; it is a product-level success criterion.
+
+Benchmarks should distinguish at least:
+
+- compiler startup time;
+- single-file compile time;
+- clean full-project build time;
+- incremental rebuild after one function-body change;
+- incremental rebuild after one public-interface change;
+- final link time.
+
+Performance claims should be based on reproducible benchmark projects and measured wall-clock time, CPU time, peak memory, and amount of source/code actually reprocessed.
+
+The guiding rule is:
+
+> Fast compile should earn its name against the fastest mainstream compiled-language toolchains, especially Go.
+
+
 ### Large-project compilation is the primary target
 
 Fast compile is primarily designed to reduce build times in large codebases where compilation can take many minutes or hours.
