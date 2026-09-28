@@ -103,6 +103,53 @@ The guiding rule is:
 > The fastest build is the build that is both quick and correct the first time.
 
 
+### Minimize dynamic compiler work
+
+Fast compile intentionally removes or restricts language features that require the compiler to perform open-ended dynamic resolution.
+
+Examples of intentionally avoided work include:
+
+- function overload candidate search;
+- implicit numeric conversion search;
+- transitive import/name lookup;
+- user-defined operator lookup;
+- macro expansion;
+- arbitrary compile-time execution;
+- template-style per-type recompilation;
+- cross-function lifetime inference;
+- hidden mutable alias analysis;
+- runtime method lookup and virtual dispatch metadata generation;
+- implicit module initialization.
+
+Where possible, source syntax directly identifies what the compiler must do.
+
+Examples:
+
+```text
+server.post::send();
+```
+
+directly identifies the package, file module, and function.
+
+```text
+user.print();
+```
+
+statically identifies a struct method without virtual dispatch.
+
+```text
+data = process(move data);
+```
+
+makes ownership transfer and replacement explicit.
+
+This is a deliberate performance strategy rather than an accidental consequence of a small language.
+
+The guiding rule is:
+
+> If the compiler can know the answer directly from local syntax and metadata, it should not search for one.
+
+
 ### Compilation performance target
 
 Fast compile aims to be faster to compile than Go, not merely faster than C++.
