@@ -110,8 +110,12 @@ Fast compile aims to be faster to compile than Go, not merely faster than C++.
 The performance target is:
 
 - clearly outperform C++ build times on large projects;
-- outperform Go for incremental rebuilds as an early hard requirement;
-- ultimately outperform Go for clean builds as well.
+- outperform Go for incremental rebuilds;
+- outperform Go for clean builds.
+
+These are not optional long-term aspirations. They are acceptance criteria for calling the toolchain a successful Fast compile implementation.
+
+A prototype may temporarily miss these targets during development, but a release that is intended to represent the language/toolchain as mature should not claim the Fast compile name as fulfilled if representative Go builds remain faster.
 
 Because the language is named Fast compile, build speed is not only an implementation detail; it is a product-level success criterion.
 
