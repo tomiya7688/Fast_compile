@@ -1247,6 +1247,64 @@ The default backend should:
 
 The normal fast build must remain fully functional when LLVM is not installed.
 
+### Fast compile native optimizer
+
+Fast compile is intended to eventually include its own optimizer designed specifically for the language's IR, safety rules, and compilation-speed goals.
+
+The native optimizer is not a general-purpose replacement for every LLVM optimization. Its purpose is to provide the highest-value optimizations with small, predictable compile-time cost.
+
+The optimizer should be organized as small independent passes rather than one large opaque transformation engine.
+
+Likely native passes include:
+
+- constant folding;
+- constant propagation;
+- dead-code elimination;
+- unreachable-block removal;
+- copy propagation;
+- simple local common-subexpression elimination;
+- trivial branch simplification;
+- simple strength reduction;
+- local stack-slot elimination;
+- cheap function-local range analysis;
+- bounds-check elimination only when locally proven safe;
+- overflow-check elimination only when locally proven unnecessary;
+- simple register/allocation preparation for the lightweight backend.
+
+Expensive whole-program analysis, open-ended fixed-point optimization, and mandatory cross-module optimization are not part of the normal fast path.
+
+### Optimization safety
+
+Fast compile optimizations must preserve the language's safety semantics.
+
+An optimization may remove a bounds check, overflow check, destruction, ownership transition, or other safety operation only when correctness can be proven from information already available to that optimization.
+
+If the proof is not immediate and reliable, the check remains.
+
+The compiler IR should have explicit invariants, and optimization passes should be independently testable.
+
+During compiler development and validation builds, IR verification should be available before and after optimization passes so invalid transformations are detected before machine code is emitted.
+
+A failed verifier is a compiler bug and must not result in executable output.
+
+The optimizer should also be suitable for differential testing:
+
+```text
+same source
+  -> minimally optimized/lightweight path
+  -> native optimized path
+  -> LLVM path
+```
+
+Equivalent observable behavior across these paths is an important correctness test.
+
+The native optimizer therefore serves two goals:
+
+1. reduce compile time by avoiding dependence on a heavyweight external optimizer for normal builds;
+2. reduce optimization risk by keeping transformations small, explicit, verifiable, and aware of Fast compile's own safety semantics.
+
+LLVM remains useful as an optional high-cost optimization path and as an independent comparison target, but it is not intended to be the permanent primary optimizer for normal Fast compile builds.
+
 ### Optional LLVM backend
 
 LLVM is supported as an optional backend for builds where generated-code quality matters more than compile time.
