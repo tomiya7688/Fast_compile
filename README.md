@@ -1,89 +1,51 @@
 # Fast compile
 
-**Fast compile** is an experimental programming language designed around one primary goal:
+**Fast compile** は、大規模なネイティブプロジェクトを非常に短い時間でビルドすることを最優先に設計するプログラミング言語です。
 
-> Compile fast.
+> 目標は「C++より速い」だけではありません。成熟版では、代表的な clean build と incremental build の両方で Go より速いことを合格条件とします。
 
-The project intentionally prefers simple, predictable language rules over expensive compiler analysis.
+## 5つの優先事項
 
+1. **コンパイラ自身を壊れにくくする。** miscompile、クラッシュ、不正なキャッシュ再利用を極力避ける。
+2. **言語仕様起因のバグを減らす。** 自動解放、単純な所有権、範囲チェック、overflowチェックなどを持つ。
+3. **コンパイルを非常に速くする。** 不要な解析・探索・再コンパイル・展開を避ける。
+4. **生成プログラムを軽く速くする。** ネイティブコード、小さいランタイム、GCなし。
+5. **コンパイラ本体も必要以上に巨大化させない。**
 
-## Core priorities
+要約すると、
 
-Fast compile is built around four priorities, in this order:
+> **信頼できるコンパイラ。バグを生みにくい言語。高速ビルド。軽量なネイティブ実行。小さいコンパイラ。**
 
-1. **The compiler itself should be reliable.**  
-   A fast compiler that crashes, miscompiles code, or produces unreliable incremental results only creates more rebuilds.
+## 現在の主な設計
 
-2. **The language should prevent avoidable bugs.**  
-   Features such as automatic destruction are primarily there to remove common classes of mistakes such as forgotten frees, use-after-free patterns, and ownership confusion without requiring expensive global analysis.
+- GCなし。所有値はスコープ終了時に自動解放。
+- 所有権移動は `move` で明示。
+- 借用 `&T` は読み取り専用で、関数境界を越えて保存・returnできない。
+- 可変借用なし。変更したい所有値は `move` で渡し、結果を呼び出し元で再代入する。
+- 暗黙数値変換、関数overload、operator overload、macro、任意のcompile-time実行なし。
+- `.fscm` ファイル単位のコンパイル、symbol/function単位のincremental cache。
+- packageはフォルダ、file moduleは `.fscm` ファイル。
+- 軽量高速コンパイラと独自最適化コンパイラを同一バージョンで提供。
+- LLVMは任意の第3backend。
+- 初期ターゲットは Linux x86-64。LinuxではELF `.o` を生成し、既定リンカは mold。
 
-3. **Compilation should be fast, especially at large scale.**  
-   The toolchain should avoid unnecessary parsing, analysis, recompilation, template-style expansion, and whole-program work.
+## 仕様
 
-4. **Generated programs should remain reasonably small and fast.**  
-   Fast compile targets native code, a small runtime footprint, predictable costs, and good performance without requiring a large VM, GC, or mandatory runtime scheduler.
+日本語版が正本です。
 
-5. **The compiler implementation should stay reasonably small.**  
-   Fast compile should avoid accumulating large subsystems that are not necessary for correctness, fast builds, or useful native-code generation. Simpler language rules, limited compile-time machinery, and a lightweight default backend should naturally keep the compiler codebase and dependency footprint under control.
+- [設計仕様（日本語・正本）](docs/DESIGN.md)
+- [Design specification (English translation)](docs/DESIGN.en.md)
 
-In short:
+## Bitlangとの関係
 
-> Reliable compiler. Safer language. Fast builds. Lightweight native programs. Small compiler.
+Fast compile は Bitlang と同じ作者による別系統の言語で、Bitlangファミリーではありません。
 
-## Current direction
+Bitlang はプリプロセッサやコンパイラを巨大で柔軟な変換系へ拡張する方向を取ります。Fast compile は逆に、互換変換・高度な解析・動的な探索・隠れたcompile-time処理を極力削り、コンパイル量そのものを減らす方向を取ります。
 
-The first confirmed design work is the memory model:
+両者は同じ問題に対する軽量版/重量版ではなく、意図的に逆のトレードオフを選ぶ別言語です。
 
-- No garbage collector.
-- Heap-owned values are automatically released when their owner leaves scope.
-- A heap-owned value has one owner.
-- Ownership transfer is explicit with `move`.
-- Borrowed references use `&T`.
-- Borrowed references do not escape the function boundary that owns their validity.
-- Returning or storing an escaping borrowed reference is not supported.
-- Owned values can cross function boundaries by ownership transfer.
-- The compiler should reject invalid operations locally instead of performing expensive cross-function lifetime analysis.
+## 状態
 
-Example syntax is currently provisional.
+現在は仕様策定と初期実装前の設計段階です。構文・ABI・backendの細部は今後も更新されます。
 
-```text
-fn create() -> Data {
-    const x = new Data()
-    return move x
-}
-
-fn use(data: &Data) {
-    print(data)
-}
-```
-
-See [docs/DESIGN.md](docs/DESIGN.md) for the current design decisions.
-
-## Status
-
-Very early design stage. Syntax, type system, compiler backend, standard library, and file extension are not decided yet.
-
-
-## Relationship to Bitlang
-
-Fast compile is developed by the same author as Bitlang, but it is intentionally **not part of the Bitlang language family**.
-
-The two projects pursue almost opposite ideas of what a compiler should become.
-
-Bitlang deliberately expands compilation into a large and highly capable transformation system. Its preprocessor and compiler are intended to go far beyond ordinary parsing and static analysis, moving toward sophisticated source-to-source transformation and text-processing behavior that approaches a lightweight text-AI-like role.
-
-That design gives Bitlang broad compatibility, translation flexibility, and the ability to reshape source through rich intermediate processing.
-
-Fast compile intentionally gives up most of that flexibility.
-
-It avoids broad compatibility layers, open-ended source transformation, expensive analysis, large compile-time execution systems, and other machinery that would make compilation harder to predict or scale.
-
-In short:
-
-- **Bitlang:** make compilation itself extremely powerful, flexible, and transformative.
-- **Fast compile:** remove as much compilation work as possible while preserving a useful, fast native language.
-
-Fast compile is therefore not a reduced Bitlang implementation. It is a separate language lineage created by choosing the opposite tradeoff.
-
-Both approaches have value: Bitlang explores how much capability can be placed into compilation, while Fast compile explores how much capability can be removed while still producing a practical large-scale systems language.
-
+[English README](README.en.md)
