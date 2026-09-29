@@ -1230,7 +1230,19 @@ The guiding rule is:
 
 ## 25. Compiler implementation and code-generation backends
 
-Fast compile uses two code-generation paths with different priorities.
+Fast compile releases provide two compiler variants at the same language/compiler version.
+
+Both variants share the same source language, parser, type system, ownership rules, diagnostics model, interface metadata, incremental dependency format, and core IR. They differ only in the optimization/code-generation path after the shared front end.
+
+A release is therefore conceptually:
+
+```text
+Fast compile version X.Y.Z
+    ├─ fast compiler      -> lightweight high-throughput backend
+    └─ optimized compiler -> Fast compile native optimizing backend
+```
+
+The two variants must accept the same valid programs and preserve the same language semantics.
 
 ### Default lightweight backend
 
@@ -1247,9 +1259,13 @@ The default backend should:
 
 The normal fast build must remain fully functional when LLVM is not installed.
 
-### Fast compile native optimizer
+### Fast compile native optimizing backend
 
-Fast compile is intended to eventually include its own optimizer designed specifically for the language's IR, safety rules, and compilation-speed goals.
+Fast compile is intended to include its own optimizing backend designed specifically for the language's IR, safety rules, and compilation-speed goals.
+
+This optimizing backend is shipped alongside the lightweight backend at the same compiler version. It is not a later or separately versioned compiler: both are official implementations of the same Fast compile release.
+
+The native optimizer is not a general-purpose replacement for every LLVM optimization. Its purpose is to provide the highest-value optimizations with controlled, predictable compile-time cost while remaining fully aware of Fast compile semantics.
 
 The native optimizer is not a general-purpose replacement for every LLVM optimization. Its purpose is to provide the highest-value optimizations with small, predictable compile-time cost.
 
@@ -1287,16 +1303,17 @@ During compiler development and validation builds, IR verification should be ava
 
 A failed verifier is a compiler bug and must not result in executable output.
 
-The optimizer should also be suitable for differential testing:
+The two official compiler variants are also a built-in differential-testing opportunity:
 
 ```text
 same source
-  -> minimally optimized/lightweight path
-  -> native optimized path
-  -> LLVM path
+  -> lightweight compiler
+  -> native optimizing compiler
 ```
 
-Equivalent observable behavior across these paths is an important correctness test.
+Equivalent observable behavior is required.
+
+LLVM may additionally be used as a third independent comparison path during validation, but it is not one of the two required release variants.
 
 The native optimizer therefore serves two goals:
 
@@ -1307,23 +1324,22 @@ LLVM remains useful as an optional high-cost optimization path and as an indepen
 
 ### Optional LLVM backend
 
-LLVM is supported as an optional backend for builds where generated-code quality matters more than compile time.
+LLVM remains an optional third backend for experimentation, validation, and builds that specifically want LLVM's optimization pipeline.
 
 Conceptually:
 
 ```text
 source
-  -> Fast compile front end
+  -> shared Fast compile front end
   -> Fast compile IR
-       -> lightweight native backend   // normal fast build
-       -> LLVM backend                 // slower optimized build
+       -> lightweight backend          // official fast compiler
+       -> native optimizing backend    // official optimized compiler
+       -> LLVM backend                 // optional external path
 ```
 
-Both backends share the same parser, type system, ownership checks, module metadata, and incremental dependency model.
+LLVM is not part of language correctness and must not become a mandatory dependency of either official compiler variant.
 
-LLVM is not part of language correctness and must not become a mandatory dependency of the normal compiler path.
-
-A build mode may explicitly select LLVM or another future optimization backend.
+The official lightweight and native optimizing compilers must remain usable without LLVM installed.
 
 ### Compiler implementation language
 
