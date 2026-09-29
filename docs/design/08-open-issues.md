@@ -1,0 +1,16 @@
+# 8. 未決定事項
+
+現時点で大きく未決定または実装前に確定が必要な項目:
+
+- Windows x86-64 のobject/executable format詳細と既定linker。
+- Windows toolchain integration。
+- C-compatible struct layoutの明示構文。
+- C++ wrapper/adaptor toolの具体仕様。
+- 標準libraryの最小セットとpackage構成。
+- 軽量backendのx86-64 register allocation・calling convention loweringの詳細。
+- 独自optimizerのpass順序とbudget。
+- compiler binary / CLI名、build profile名。
+- formatter (`fc fmt` 相当) の具体仕様。
+- test/build/package managementのCLIとproject manifest。
+
+表面構文はかなり固まっているが、parser実装開始後に矛盾が見つかった場合は日本語正本を更新してから実装へ反映する。
