@@ -33,8 +33,8 @@
 
 日本語版が正本です。
 
-- [設計仕様（日本語・正本）](docs/DESIGN.md)
-- [Design specification (English translation)](docs/DESIGN.en.md)
+- [設計仕様（日本語・正本）](Docs/Jp/README.md)
+- [English documentation](Docs/en/README.md)
 
 ## Bitlangとの関係
 
@@ -48,4 +48,4 @@ Bitlang はプリプロセッサやコンパイラを巨大で柔軟な変換系
 
 現在は仕様策定と初期実装前の設計段階です。構文・ABI・backendの細部は今後も更新されます。
 
-[English README](README.en.md)
+[English documentation](Docs/en/README.md)
