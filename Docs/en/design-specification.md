@@ -2748,6 +2748,50 @@ This keeps all cross-file dependencies explicit, even when both files are in the
 
 Private declarations remain private to their own file and are not reachable from sibling files.
 
+### Type dependencies and imports
+
+If source code explicitly names a type defined in another package, that package must be imported.
+
+```text
+import models
+
+fn save(user: models.user::User) {
+    ...
+}
+```
+
+Without `import models`, source code cannot name `models.user::User`.
+
+However, if a value is received through type inference and merely passed through compatible APIs without naming or inspecting its type, the package that defines that type does not need to be imported.
+
+```text
+import database
+
+const user = database.users::load()
+database.users::save(move user)
+```
+
+The compiler still knows the complete type identity from compiled interface metadata.
+
+If source code directly uses the type's public structure, such as fields or methods, the defining package must be imported.
+
+```text
+import database
+import models
+
+const user = database.users::load()
+print(user.id)
+user.print()
+```
+
+The source-level rule is therefore:
+
+- explicitly name an external type -> import its defining package;
+- directly use its fields or methods -> import its defining package;
+- only hold, move, or pass through an inferred value -> no import of the defining package is required.
+
+This prevents internal API type dependencies from unnecessarily leaking into callers while keeping explicit structural dependencies visible.
+
 ### No recursive folder import
 
 Importing a package exposes only that exact directory/package.
