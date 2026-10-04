@@ -28,5 +28,6 @@
 
 - Treat the Japanese specification as binding. Keep documented decisions, open questions, and new proposals distinct. A conversational agreement not yet reflected in the specification is not documented policy.
 - Search first and inspect only task-relevant files and sections. Do not read all specifications or history by default. Once the goal, required evidence, acceptance criteria, and working set are sufficient, stop exploring.
+- When concurrent remote work may affect the task, check a compact remote delta through the configured GitHub connector before editing: current base commit plus relevant open PR titles, base/head, and changed file names. Read diffs or file contents only for overlapping or dependent changes; do not scan all PRs, issues, or repository history.
 - Do not silently narrow v0.1, invent generic compiler defaults, or add throwaway implementations that conflict with the project goals.
 - Preserve unrelated working-tree changes. Run only validation relevant to the change and report unverified areas explicitly.
