@@ -5,6 +5,7 @@
 - `README.md` summarizes the project goal and status.
 - `Docs/Jp/README.md` is the entry point for specifications. `Docs/Jp/` is canonical; `Docs/en/` is translated material.
 - Read only the Japanese chapter relevant to the task; do not load every chapter by default.
+- `レビュー基準.md` defines mandatory review criteria; `コーディング規約.md` defines mandatory coding conventions. Read the applicable file for every code change or review.
 
 ## Route by task
 
