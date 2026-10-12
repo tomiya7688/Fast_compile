@@ -44,8 +44,39 @@ Bitlang はプリプロセッサやコンパイラを巨大で柔軟な変換系
 
 両者は同じ問題に対する軽量版/重量版ではなく、意図的に逆のトレードオフを選ぶ別言語です。
 
+## Cコンパイラ実装
+
+C製コンパイラは Linux x86-64 向けのELF `.o` 出力を実装します。現在の実装は空モジュールと、仕様で定義した次の `main` を受け付けます。
+
+```fscm
+fn main(void) { }
+fn main(void) -> int { return 0; }
+```
+
+未対応構文は成功扱いにせず、位置を示す診断を出して終了します。現段階で構文全体や最適化を実装済みとは扱いません。
+
+### ビルドとテスト
+
+開発者はCMakeとC11対応Cコンパイラを使い、コンパイラと自動テストをビルドします。
+
+```sh
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+CTestは開発時の検証用です。`fastcompile` のCLIにはテスト実行や最終リンク機能を含めません。
+
+### コンパイル
+
+利用者はLinux x86-64上で `.fscm` ファイルを指定し、ELF relocatable objectを生成します。
+
+```sh
+build/fastcompile source.fscm -o output.o
+```
+
 ## 状態
 
-現在は仕様策定と初期実装前の設計段階です。構文・ABI・backendの細部は今後も更新されます。
+仕様を正本として初期コンパイラ実装を進めています。言語全体、ABI、最適化、incremental buildは未実装です。
 
 [English documentation](Docs/en/README.md)
