@@ -11,7 +11,7 @@
   処理: [
     1: .textとsymbol/string tableの配置を計算する
     2: ELF headerとsection headerを組み立てる
-    3: 一時出力に書き込み完了後に成功を返す
+    3: 指定した出力先への書き込み完了を確認する
   ]
   引数: [
     path: 生成先のobject file

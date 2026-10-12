@@ -71,7 +71,7 @@ static int pad_to(FILE *output, uint64_t current, uint64_t target) {
 /*
 {
   責務: [
-    fc_write_elf_object:空モジュールまたはreturn 0だけのmainをELF64形式へ変換する
+    fc_write_elf_object: 空モジュールまたはreturn 0だけのmainをELF64形式へ変換する
   ]
   処理: [
     1: 5 sectionのELF64 relocatable object構造を設定する
