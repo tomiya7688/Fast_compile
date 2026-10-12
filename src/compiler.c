@@ -1,6 +1,7 @@
 #include "compiler.h"
 
 #include "elf_writer.h"
+#include "lexer.h"
 #include "parser.h"
 #include "source_file.h"
 
@@ -61,12 +62,20 @@ FcStatus fc_compile_file(const char *source_path, const char *output_path,
         return FC_SYNTAX_ERROR;
     }
 
-    FcModuleKind kind;
-    diagnostic->path = source_path;
-    if (!fc_parse_module(source, &kind, diagnostic)) {
+    FcTokenList tokens = {0};
+    if (!fc_lex_source(source, &tokens, diagnostic)) {
         free(source);
         return FC_SYNTAX_ERROR;
     }
+
+    FcModuleKind kind;
+    diagnostic->path = source_path;
+    if (!fc_parse_module(tokens.items, tokens.count, &kind, diagnostic)) {
+        fc_free_tokens(&tokens);
+        free(source);
+        return FC_SYNTAX_ERROR;
+    }
+    fc_free_tokens(&tokens);
     free(source);
 
     if (!fc_write_elf_object(output_path, kind)) {

@@ -12,6 +12,7 @@ endif()
 add_library(fastcompile_core
     src/compiler.c
     src/elf_writer.c
+    src/lexer.c
     src/parser.c
     src/source_file.c
 )

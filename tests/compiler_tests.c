@@ -1,4 +1,5 @@
 #include "compiler.h"
+#include "lexer.h"
 #include "parser.h"
 
 #include <elf.h>
@@ -115,14 +116,37 @@ static int verify_object(const char *input, const char *output, int has_main) {
 int main(void) {
     FcDiagnostic diagnostic = {0};
     FcModuleKind kind;
-    CHECK(fc_parse_module("", &kind, &diagnostic) && kind == FC_MODULE_EMPTY);
-    CHECK(fc_parse_module("fn main(void) {}", &kind, &diagnostic) &&
+    FcTokenList tokens = {0};
+    const char *empty_source = "";
+    CHECK(fc_lex_source(empty_source, &tokens, &diagnostic));
+    CHECK(tokens.count == 1 && tokens.items[0].kind == FC_TOKEN_END);
+    CHECK(fc_parse_module(tokens.items, tokens.count, &kind, &diagnostic) &&
+          kind == FC_MODULE_EMPTY);
+    fc_free_tokens(&tokens);
+
+    const char *void_source = "fn\nmain(void) { }";
+    CHECK(fc_lex_source(void_source, &tokens, &diagnostic));
+    CHECK(tokens.count == 8 && tokens.items[1].line == 2 &&
+          tokens.items[1].column == 1);
+    CHECK(fc_parse_module(tokens.items, tokens.count, &kind, &diagnostic) &&
           kind == FC_MAIN_VOID);
-    CHECK(fc_parse_module("fn main(void) -> int { return 0; }", &kind,
-                          &diagnostic) &&
+    fc_free_tokens(&tokens);
+
+    const char *int_source = "fn main(void) -> int { return 0; }";
+    CHECK(fc_lex_source(int_source, &tokens, &diagnostic));
+    CHECK(fc_parse_module(tokens.items, tokens.count, &kind, &diagnostic) &&
           kind == FC_MAIN_INT_ZERO);
-    CHECK(!fc_parse_module("fn main(void) -> int { return 1; }", &kind,
-                           &diagnostic));
+    fc_free_tokens(&tokens);
+
+    const char *invalid_source = "fn main(void) -> int { return 1; }";
+    CHECK(fc_lex_source(invalid_source, &tokens, &diagnostic));
+    CHECK(!fc_parse_module(tokens.items, tokens.count, &kind, &diagnostic));
+    CHECK(diagnostic.line == 1 && diagnostic.column == 31);
+    fc_free_tokens(&tokens);
+
+    const char *bad_character = "fn main(void) { @ }";
+    CHECK(!fc_lex_source(bad_character, &tokens, &diagnostic));
+    CHECK(diagnostic.line == 1 && diagnostic.column == 17);
     CHECK(verify_object("empty.fscm", "empty.o", 0));
     CHECK(verify_object("main-void.fscm", "main-void.o", 1));
     CHECK(verify_object("main-int.fscm", "main-int.o", 1));

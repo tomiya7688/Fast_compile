@@ -2,6 +2,7 @@
 #define FASTCOMPILE_PARSER_H
 
 #include "compiler.h"
+#include "lexer.h"
 
 typedef enum {
     FC_MODULE_EMPTY,
@@ -29,7 +30,7 @@ typedef enum {
   ]
 }
 */
-int fc_parse_module(const char *source, FcModuleKind *kind,
+int fc_parse_module(const FcToken *tokens, size_t count, FcModuleKind *kind,
                     FcDiagnostic *diagnostic);
 
 #endif
