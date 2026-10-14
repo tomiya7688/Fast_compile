@@ -12,6 +12,7 @@ endif()
 add_library(fastcompile_core
     src/compiler.c
     src/elf_writer.c
+    src/ir.c
     src/lexer.c
     src/parser.c
     src/source_file.c
@@ -23,7 +24,7 @@ target_link_libraries(fastcompile PRIVATE fastcompile_core)
 
 include(CTest)
 if(BUILD_TESTING)
-    foreach(golden empty main-void main-int)
+    foreach(golden empty main-void main-int multiple-functions)
         configure_file(tests/golden/${golden}.fscm ${golden}.fscm COPYONLY)
     endforeach()
     add_executable(fastcompile_tests tests/compiler_tests.c)

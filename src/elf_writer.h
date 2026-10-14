@@ -1,7 +1,7 @@
 #ifndef FASTCOMPILE_ELF_WRITER_H
 #define FASTCOMPILE_ELF_WRITER_H
 
-#include "parser.h"
+#include "ir.h"
 
 /*
 {
@@ -15,13 +15,13 @@
   ]
   引数: [
     path: 生成先のobject file
-    kind: コード生成対象のモジュール種別
+    module: parserが構築したbackend非依存の関数IR列
   ]
   戻り値: [
     success: object fileを書き終えたら真
   ]
 }
 */
-int fc_write_elf_object(const char *path, FcModuleKind kind);
+int fc_write_elf_object(const char *path, const FcIRModule *module);
 
 #endif
