@@ -1,0 +1,5 @@
+Usage: fastc --check-input <file.fscm>
+       fastc --help
+       fastc --version
+
+Bootstrap utility: --check-input reads bytes only; it does not parse or compile.

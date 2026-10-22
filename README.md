@@ -46,6 +46,22 @@ Bitlang はプリプロセッサやコンパイラを巨大で柔軟な変換系
 
 ## 状態
 
-現在は仕様策定と初期実装前の設計段階です。構文・ABI・backendの細部は今後も更新されます。
+現在は仕様策定とC製コンパイラの初期bootstrap実装段階です。構文・ABI・backendの細部は今後も更新されます。
+
+## C製bootstrapのビルドとテスト
+
+最初の実装単位 [Issue #1](https://github.com/tomiya7688/Fast_compile/issues/1) は、C製の入力読み込み・CLI・テスト基盤です。
+
+```sh
+make
+make test
+./build/fastc --check-input tests/fixtures/minimal.fscm
+```
+
+`--check-input` は `.fscm` ファイルを読み込めたことだけを確認し、**構文検査・型検査・最適化・コード生成はまだ行いません**。
+
+実装中のコマンド名 `fastc` は仮の開発用名称です。正式CLI名・形式は未決定です。
+
+終了コード: `0` = 成功、`2` = CLI使用方法エラー、`3` = 入力ファイルエラー。
 
 [English documentation](Docs/en/README.md)
