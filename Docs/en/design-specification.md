@@ -1247,6 +1247,16 @@ Fast compile version X.Y.Z
 
 The two variants must accept the same valid programs and preserve the same language semantics.
 
+### Compiler command
+
+The compiler command is `fastcompile`.
+
+```text
+fastcompile <source.fscm> -o <output.o>
+```
+
+This compiles the specified `.fscm` file module and emits a native object file. The compiler CLI does not perform final linking; final linking is delegated to an external linker. Selection between the lightweight and optimized variants is defined separately.
+
 ### Default lightweight backend
 
 The normal Fast compile build uses a lightweight native backend designed primarily for compilation throughput.
