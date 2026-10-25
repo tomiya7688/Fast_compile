@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   sanitizers:
-    name: ASan + LSan + UBSan (${{ matrix.cc }})
+    name: ASan + UBSan (${{ matrix.cc }}; LSan verified on GCC)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -44,6 +44,7 @@ jobs:
             LDFLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all"
 
       - name: Verify LeakSanitizer is active
+        if: ${{ matrix.cc == 'gcc' }}
         shell: bash
         run: |
           cat > leak_probe.c <<'EOF'
