@@ -1,0 +1,67 @@
+name: C memory safety
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: c-memory-safety-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sanitizers:
+    name: ASan + LSan + UBSan (${{ matrix.cc }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    env:
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:strict_string_checks=1
+      LSAN_OPTIONS: exitcode=23:report_objects=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Build and test with sanitizers
+        shell: bash
+        run: |
+          make clean
+          make test \
+            CC="${{ matrix.cc }}" \
+            CFLAGS="-std=c11 -O1 -g -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all" \
+            LDFLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all"
+
+      - name: Verify LeakSanitizer is active
+        shell: bash
+        run: |
+          cat > leak_probe.c <<'EOF'
+          #include <stdlib.h>
+          int main(void) {
+              int *leaked = malloc(sizeof(int) * 8);
+              if (leaked == NULL) return 2;
+              leaked[0] = 17;
+              return leaked[0] == 17 ? 0 : 1;
+          }
+          EOF
+          "${{ matrix.cc }}" -std=c11 -g -fsanitize=address,undefined -fno-omit-frame-pointer leak_probe.c -o leak_probe
+          set +e
+          ./leak_probe > leak_probe.log 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 23 ] || ! grep -q "LeakSanitizer: detected memory leaks" leak_probe.log; then
+            cat leak_probe.log
+            echo "LeakSanitizer did not fail on the intentional leak."
+            exit 1
+          fi
