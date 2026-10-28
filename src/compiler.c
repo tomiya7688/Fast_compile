@@ -11,22 +11,10 @@
 
 /*
 {
-  責務: [
-    fc_compile_file: CLIと後続compiler stageの間を接続する
-  ]
-  処理: [
-    1: 引数と拡張子を検証する
-    2: ソースを読み込み構文解析する
-    3: ELF出力を生成し資源を解放する
-  ]
-  引数: [
-    source_path: .fscm入力パス
-    output_path: .o出力パス
-    diagnostic: 呼び出し側へ返す診断内容
-  ]
-  戻り値: [
-    status: compilerの終了状態
-  ]
+  "責務": {"fc_compile_file": "ソースをELFオブジェクトへコンパイルする"},
+  "処理": ["引数を検証する", "ソースを読み込み解析する", "ELFを出力して資源を解放する"],
+  "引数": {"source_path": "入力パス", "output_path": "出力パス", "diagnostic": "診断の出力先"},
+  "戻り値": ["コンパイルの終了状態"]
 }
 */
 FcStatus fc_compile_file(const char *source_path, const char *output_path,
@@ -57,6 +45,7 @@ FcStatus fc_compile_file(const char *source_path, const char *output_path,
         diagnostic->message = "cannot read source file";
         return FC_INPUT_ERROR;
     }
+    diagnostic->path = source_path;
     if (memchr(source, '\0', source_length) != NULL) {
         free(source);
         diagnostic->message = "source contains a NUL byte";
@@ -70,7 +59,6 @@ FcStatus fc_compile_file(const char *source_path, const char *output_path,
     }
 
     FcIRModule module = {0};
-    diagnostic->path = source_path;
     if (!fc_parse_module(tokens.items, tokens.count, &module, diagnostic)) {
         fc_free_tokens(&tokens);
         fc_ir_free(&module);

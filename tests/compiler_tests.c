@@ -74,6 +74,33 @@ static int verify_many_function_names(void) {
 
 /*
 {
+  "責務": {"verify_input_diagnostic": "不正な入力の診断パスを検証する"},
+  "処理": ["一時ソースを書く", "コンパイルし診断を照合する", "一時ソースを削除する"],
+  "引数": {"bytes": "入力バイト列", "length": "入力バイト数", "message": "期待する診断"},
+  "戻り値": ["診断が期待に一致すれば真"]
+}
+*/
+static int verify_input_diagnostic(const void *bytes, size_t length,
+                                   const char *message) {
+    const char *path = "invalid-diagnostic.fscm";
+    FILE *source = fopen(path, "wbx");
+    if (source == NULL) {
+        return 0;
+    }
+    int wrote = fwrite(bytes, 1, length, source) == length;
+    int closed = fclose(source) == 0;
+    FcDiagnostic diagnostic = {0};
+    int valid = wrote && closed &&
+                fc_compile_file(path, "invalid-diagnostic.o", &diagnostic) ==
+                    FC_SYNTAX_ERROR &&
+                diagnostic.path != NULL && strcmp(diagnostic.path, path) == 0 &&
+                strcmp(diagnostic.message, message) == 0;
+    remove(path);
+    return valid;
+}
+
+/*
+{
   "責務": {"verify_object": "出力ELFのセクション、シンボル、機械語を検証する"},
   "処理": ["ソースをコンパイルしてELFを読む", "シンボルと機械語を照合する"],
   "引数": {"input": "ソースのパス", "output": "出力パス", "expected_names": "関数名の配列", "expected_count": "関数数"},
@@ -167,6 +194,10 @@ static int verify_object(const char *input, const char *output,
 int main(void) {
     FcDiagnostic diagnostic = {0};
     FcIRModule module = {0};
+    const char nul_source[] = {'f', 'n', '\0', 'x'};
+    CHECK(verify_input_diagnostic(nul_source, sizeof(nul_source),
+                                  "source contains a NUL byte"));
+    CHECK(verify_input_diagnostic("@", 1, "invalid source character"));
     CHECK(verify_many_function_names());
     CHECK(fc_ir_add_function(NULL, (FcIRFunction){0}) ==
           FC_IR_ADD_INVALID_FUNCTION);

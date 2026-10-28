@@ -86,6 +86,16 @@ build/formatter/clang_format/data/bin/clang-format.exe --dry-run --Werror src/ir
 
 ファイル名は作業で変更したCソースとヘッダーに置き換えてください。生成物と外部コードは対象に含めません。
 
+CMakeファイルを変更した場合は、同じ開発用依存に含まれるcmake-formatを使います。PowerShellでは次を実行してください。
+
+```powershell
+$env:PYTHONPATH = 'build/formatter'
+python -m cmakelang.format -i tests/check_cli_error.cmake
+python -m cmakelang.format --check tests/check_cli_error.cmake
+```
+
+Linuxでは `PYTHONPATH=build/formatter python -m cmakelang.format` の後に同じ引数を指定してください。ファイル名は変更したCMakeファイルに置き換えてください。
+
 ### コンパイル
 
 利用者はLinux x86-64上で `.fscm` ファイルを指定し、ELF relocatable objectを生成します。
