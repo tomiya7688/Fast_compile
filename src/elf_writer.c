@@ -11,21 +11,10 @@ static const char section_strings[] = "\0.text\0.symtab\0.strtab\0.shstrtab\0";
 
 /*
 {
-  責務: [
-    write_bytes: 指定したバイト列をファイルへ完全に書き出す
-  ]
-  処理: [
-    1: fwriteで全バイトを書き込む
-    2: 書き込み不足を失敗として返す
-  ]
-  引数: [
-    output: 出力ファイル
-    bytes: 書き込む先頭アドレス
-    length: 書き込むバイト数
-  ]
-  戻り値: [
-    success: 指定サイズ全てを書けたら真
-  ]
+  "責務": {"write_bytes": "指定したバイト列をファイルへ完全に書き出す"},
+  "処理": ["全バイトを書き込み、書き込み不足を検出する"],
+  "引数": {"output": "出力ファイル", "bytes": "バイト列", "length": "バイト数"},
+  "戻り値": ["指定サイズ全てを書けたら真"]
 }
 */
 static int write_bytes(FILE *output, const void *bytes, size_t length) {
@@ -34,21 +23,10 @@ static int write_bytes(FILE *output, const void *bytes, size_t length) {
 
 /*
 {
-  責務: [
-    pad_to: 指定offsetまでELF section alignment用のゼロを出力する
-  ]
-  処理: [
-    1: 現在位置が目標より後ろなら失敗する
-    2: 必要な数だけゼロを書き出す
-  ]
-  引数: [
-    output: 出力ファイル
-    current: 現在のファイルoffset
-    target: 次sectionの開始offset
-  ]
-  戻り値: [
-    success: 目標位置へ移動できたら真
-  ]
+  "責務": {"pad_to": "指定位置までセクション整列用のゼロを出力する"},
+  "処理": ["現在位置を確認し、必要な数だけゼロを書き出す"],
+  "引数": {"output": "出力ファイル", "current": "現在位置", "target": "目標位置"},
+  "戻り値": ["目標位置へ移動できたら真"]
 }
 */
 static int pad_to(FILE *output, uint64_t current, uint64_t target) {
@@ -70,32 +48,32 @@ static int pad_to(FILE *output, uint64_t current, uint64_t target) {
 
 /*
 {
-  責務: [
-    build_function_tables: module IRからELF symbol table・name table・textを作る
-  ]
-  処理: [
-    1: 関数数・name span・offset計算のoverflowを検証する
-    2: 関数nameをstring tableへsource順に複写する
-    3: function symbolとreturn-zero machine codeを設定する
-  ]
-  引数: [
-    module: source name spanを保持する関数IR列
-    symbols: ELF64 symbol tableの出力先
-    symbol_names: ELF string tableの出力先
-    symbol_names_size: string table byte数
-    text: function codeとalignment paddingの出力先
-    text_size: text section byte数
-  ]
-  戻り値: [
-    success: ELF tableを構築できたら真
-  ]
+  "責務": {"is_entry_function": "関数名がエントリーポイントか判定する"},
+  "処理": ["名前の長さとバイト列をmainと比較する"],
+  "引数": {"function": "判定する関数IR"},
+  "戻り値": ["関数名がmainなら真"]
+}
+*/
+static int is_entry_function(const FcIRFunction *function) {
+    return function->name != NULL && function->name_length == 4 &&
+           memcmp(function->name, "main", 4) == 0;
+}
+
+/*
+{
+  "責務": {"build_function_tables": "関数IRからELFのシンボルとコードを作る"},
+  "処理": ["関数名とコードの範囲を検証する", "ローカルシンボルを大域シンボルより先に配置する", "名前と機械語を格納する"],
+  "引数": {"module": "関数IR", "symbols": "シンボル表", "symbol_names": "名前表", "symbol_names_size": "名前表のバイト数", "text": "機械語の出力先", "text_size": "機械語のバイト数", "first_global": "最初の大域シンボルの位置"},
+  "戻り値": ["ELF表を構築できたら真"]
 }
 */
 static int build_function_tables(const FcIRModule *module, Elf64_Sym *symbols,
-                                 char *symbol_names,
-                                 size_t symbol_names_size,
-                                 unsigned char *text, size_t text_size) {
+                                 char *symbol_names, size_t symbol_names_size,
+                                 unsigned char *text, size_t text_size,
+                                 size_t first_global) {
     size_t name_offset = 1;
+    size_t local_index = 1;
+    size_t global_index = first_global;
     symbol_names[0] = '\0';
     for (size_t index = 0; index < module->count; index++) {
         const FcIRFunction *function = &module->functions[index];
@@ -114,11 +92,14 @@ static int build_function_tables(const FcIRModule *module, Elf64_Sym *symbols,
         memcpy(symbol_names + name_offset, function->name,
                function->name_length);
         symbol_names[name_offset + function->name_length] = '\0';
-        symbols[index + 1].st_name = (Elf64_Word)name_offset;
-        symbols[index + 1].st_info = ELF64_ST_INFO(STB_GLOBAL, STT_FUNC);
-        symbols[index + 1].st_shndx = 1;
-        symbols[index + 1].st_value = code_offset;
-        symbols[index + 1].st_size = sizeof(return_zero_code);
+        int is_entry = is_entry_function(function);
+        size_t symbol_index = is_entry ? global_index++ : local_index++;
+        symbols[symbol_index].st_name = (Elf64_Word)name_offset;
+        symbols[symbol_index].st_info =
+            ELF64_ST_INFO(is_entry ? STB_GLOBAL : STB_LOCAL, STT_FUNC);
+        symbols[symbol_index].st_shndx = 1;
+        symbols[symbol_index].st_value = code_offset;
+        symbols[symbol_index].st_size = sizeof(return_zero_code);
         memcpy(text + code_offset, return_zero_code, sizeof(return_zero_code));
         name_offset += function->name_length + 1;
     }
@@ -127,21 +108,10 @@ static int build_function_tables(const FcIRModule *module, Elf64_Sym *symbols,
 
 /*
 {
-  責務: [
-    fc_write_elf_object: 関数IR列をLinux x86-64 ELF64 relocatable objectへ変換する
-  ]
-  処理: [
-    1: function数に応じたtext・symbol・string tableを確保する
-    2: ELF headerと5つのsection headerを作る
-    3: 各sectionをalignmentに従って指定pathへ書き出す
-  ]
-  引数: [
-    path: ELF objectの出力先
-    module: source順で並んだ関数IR列
-  ]
-  戻り値: [
-    success: ELF objectを書き終えたら真
-  ]
+  "責務": {"fc_write_elf_object": "関数IRをLinux x86-64 ELFオブジェクトへ変換する"},
+  "処理": ["出力用の表を確保する", "ELFヘッダーを構築する", "整列して各セクションを書き出す"],
+  "引数": {"path": "出力先", "module": "ソース順の関数IR"},
+  "戻り値": ["ELFオブジェクトを書き終えたら真"]
 }
 */
 int fc_write_elf_object(const char *path, const FcIRModule *module) {
@@ -153,19 +123,23 @@ int fc_write_elf_object(const char *path, const FcIRModule *module) {
     }
 
     size_t symbol_names_size = 1;
+    size_t global_count = 0;
     for (size_t index = 0; index < module->count; index++) {
         size_t name_length = module->functions[index].name_length;
-        if (name_length == 0 || symbol_names_size >= UINT32_MAX ||
+        if (module->functions[index].name == NULL || name_length == 0 ||
+            symbol_names_size >= UINT32_MAX ||
             name_length > UINT32_MAX - symbol_names_size - 1) {
             return 0;
         }
+        global_count += is_entry_function(&module->functions[index]);
         symbol_names_size += name_length + 1;
     }
 
     size_t symbol_count = module->count + 1;
-    size_t text_size = module->count == 0
-                           ? 0
-                           : (module->count - 1) * 16 + sizeof(return_zero_code);
+    size_t first_global = symbol_count - global_count;
+    size_t text_size = module->count == 0 ? 0
+                                          : (module->count - 1) * 16 +
+                                                sizeof(return_zero_code);
     if (symbol_count > SIZE_MAX / sizeof(Elf64_Sym)) {
         return 0;
     }
@@ -179,7 +153,7 @@ int fc_write_elf_object(const char *path, const FcIRModule *module) {
         return 0;
     }
     if (!build_function_tables(module, symbols, symbol_names, symbol_names_size,
-                               text, text_size)) {
+                               text, text_size, first_global)) {
         free(symbols);
         free(symbol_names);
         free(text);
@@ -221,7 +195,7 @@ int fc_write_elf_object(const char *path, const FcIRModule *module) {
     sections[2].sh_offset = symtab_offset;
     sections[2].sh_size = symtab_size;
     sections[2].sh_link = 3;
-    sections[2].sh_info = 1;
+    sections[2].sh_info = (Elf64_Word)first_global;
     sections[2].sh_addralign = 8;
     sections[2].sh_entsize = sizeof(Elf64_Sym);
     sections[3].sh_name = 15;
@@ -243,15 +217,16 @@ int fc_write_elf_object(const char *path, const FcIRModule *module) {
         return 0;
     }
 
-    int success = write_bytes(output, &header, sizeof(header)) &&
-                  write_bytes(output, text, text_size) &&
-                  pad_to(output, text_offset + text_size, symtab_offset) &&
-                  write_bytes(output, symbols, (size_t)symtab_size) &&
-                  write_bytes(output, symbol_names, symbol_names_size) &&
-                  write_bytes(output, section_strings, sizeof(section_strings) - 1) &&
-                  pad_to(output, shstrtab_offset + sizeof(section_strings) - 1,
-                         sections_offset) &&
-                  write_bytes(output, sections, sizeof(sections));
+    int success =
+        write_bytes(output, &header, sizeof(header)) &&
+        write_bytes(output, text, text_size) &&
+        pad_to(output, text_offset + text_size, symtab_offset) &&
+        write_bytes(output, symbols, (size_t)symtab_size) &&
+        write_bytes(output, symbol_names, symbol_names_size) &&
+        write_bytes(output, section_strings, sizeof(section_strings) - 1) &&
+        pad_to(output, shstrtab_offset + sizeof(section_strings) - 1,
+               sections_offset) &&
+        write_bytes(output, sections, sizeof(sections));
     if (fclose(output) != 0) {
         success = 0;
     }

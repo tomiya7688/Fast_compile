@@ -1,0 +1,2 @@
+fn main(void) -> int { return 0; }
+fn work(void) { }

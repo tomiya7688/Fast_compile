@@ -126,6 +126,12 @@ static int verify_object(const char *input, const char *output,
                 fseek(object, (long)header.e_shoff, SEEK_SET) == 0 &&
                 fread(sections, sizeof(sections[0]), 5, object) == 5;
     size_t symbol_count = expected_count + 1;
+    size_t first_global = 1;
+    for (size_t index = 0; index < expected_count; index++) {
+        if (strcmp(expected_names[index], "main") != 0) {
+            first_global++;
+        }
+    }
     Elf64_Sym *symbols = calloc(symbol_count, sizeof(*symbols));
     if (symbols == NULL) {
         fclose(object);
@@ -133,14 +139,18 @@ static int verify_object(const char *input, const char *output,
     }
     if (valid) {
         valid = sections[2].sh_size == symbol_count * sizeof(*symbols) &&
+                sections[2].sh_info == first_global &&
                 fseek(object, (long)sections[2].sh_offset, SEEK_SET) == 0 &&
                 fread(symbols, sizeof(*symbols), symbol_count, object) ==
                     symbol_count;
     }
     const unsigned char expected_code[] = {0x31, 0xc0, 0xc3};
+    size_t local_index = 1;
+    size_t global_index = first_global;
     for (size_t index = 0; valid && index < expected_count; index++) {
         char actual_name[256] = {0};
-        Elf64_Sym *symbol = &symbols[index + 1];
+        int is_entry = strcmp(expected_names[index], "main") == 0;
+        Elf64_Sym *symbol = &symbols[is_entry ? global_index++ : local_index++];
         valid = symbol->st_name < sections[3].sh_size &&
                 fseek(object, (long)(sections[3].sh_offset + symbol->st_name),
                       SEEK_SET) == 0;
@@ -149,14 +159,18 @@ static int verify_object(const char *input, const char *output,
             size_t name_capacity = remaining < sizeof(actual_name)
                                        ? remaining
                                        : sizeof(actual_name);
-            valid = name_capacity > 0 &&
-                    fread(actual_name, 1, name_capacity, object) > 0 &&
-                    strcmp(actual_name, expected_names[index]) == 0;
+            valid =
+                name_capacity > 0 &&
+                fread(actual_name, 1, name_capacity, object) == name_capacity &&
+                memchr(actual_name, '\0', name_capacity) != NULL &&
+                strcmp(actual_name, expected_names[index]) == 0;
         }
-        valid = valid &&
-                symbol->st_info == ELF64_ST_INFO(STB_GLOBAL, STT_FUNC) &&
-                symbol->st_shndx == 1 && symbol->st_value == index * 16 &&
-                symbol->st_size == sizeof(expected_code);
+        valid =
+            valid &&
+            symbol->st_info ==
+                ELF64_ST_INFO(is_entry ? STB_GLOBAL : STB_LOCAL, STT_FUNC) &&
+            symbol->st_shndx == 1 && symbol->st_value == index * 16 &&
+            symbol->st_size == sizeof(expected_code);
         if (valid &&
             fseek(object, (long)(sections[1].sh_offset + symbol->st_value),
                   SEEK_SET) == 0) {
@@ -225,6 +239,10 @@ int main(void) {
                         &diagnostic));
     CHECK(strcmp(diagnostic.message, "duplicate function name") == 0);
     fc_ir_free(&module);
+    CHECK(!parse_source("fn main(void) { } fn main() -> int { return 0; }",
+                        &module, &diagnostic));
+    CHECK(strcmp(diagnostic.message, "duplicate function name") == 0);
+    fc_ir_free(&module);
     CHECK(!parse_source("fn main(void) -> void { }", &module, &diagnostic));
     CHECK(strcmp(diagnostic.message,
                  "main must use one of the specified entry signatures") == 0);
@@ -240,11 +258,17 @@ int main(void) {
 
     const char *main_names[] = {"main"};
     const char *multiple_names[] = {"work", "main", "finish"};
+    const char *private_names[] = {"work", "finish"};
+    const char *main_first_names[] = {"main", "work"};
     CHECK(verify_object("empty.fscm", "empty.o", NULL, 0));
     CHECK(verify_object("main-void.fscm", "main-void.o", main_names, 1));
     CHECK(verify_object("main-int.fscm", "main-int.o", main_names, 1));
     CHECK(verify_object("multiple-functions.fscm", "multiple-functions.o",
                         multiple_names, 3));
+    CHECK(
+        verify_object("private-only.fscm", "private-only.o", private_names, 2));
+    CHECK(
+        verify_object("main-first.fscm", "main-first.o", main_first_names, 2));
     CHECK(fc_compile_file("missing.fscm", "missing.o", &diagnostic) ==
           FC_INPUT_ERROR);
     return 0;

@@ -21,7 +21,15 @@ target_link_libraries(fastcompile PRIVATE fastcompile_core)
 
 include(CTest)
 if(BUILD_TESTING)
-  foreach(golden empty main-void main-int multiple-functions invalid-character)
+  foreach(
+    golden
+    empty
+    main-void
+    main-int
+    multiple-functions
+    invalid-character
+    private-only
+    main-first)
     configure_file(tests/golden/${golden}.fscm ${golden}.fscm COPYONLY)
   endforeach()
   add_executable(fastcompile_tests tests/compiler_tests.c)
