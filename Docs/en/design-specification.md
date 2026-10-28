@@ -2243,6 +2243,30 @@ const c = add_vec2(a, b)
 
 This keeps operator resolution local and predictable.
 
+### Operator precedence
+
+Fast compile uses a fixed, broadly conventional operator precedence instead of evaluating every expression strictly from left to right.
+
+Currently agreed order, highest first:
+
+1. Parentheses `( ... )` for grouping
+2. Unary operators
+3. `* / %`
+4. `+ -`
+5. Comparison and equality operators (`< <= > >= == !=`)
+6. `&&`
+7. `||`
+
+Binary operators at the same precedence level associate to the left: `20 - 5 - 3` means `(20 - 5) - 3`. This does not, by itself, define the evaluation order of operands that have side effects. `&&` and `||` retain short-circuit semantics.
+
+```text
+const a = 2 + 3 * 4;   // 14
+const b = (2 + 3) * 4; // 20
+const c = 20 - 5 - 3;  // 12
+```
+
+The relative precedence of bitwise and shift operators (`& | ^ ~ << >>`), the detailed relative ordering of relational versus equality operators, and general operand evaluation-order rules are not yet decided. Do not assume rules for these cases during implementation.
+
 ### Short-circuit boolean operators
 
 `&&` and `||` use short-circuit evaluation.
