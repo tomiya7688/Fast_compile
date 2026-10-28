@@ -28,9 +28,8 @@ typedef struct {
 }
 */
 static const FcToken *current_token(const Parser *parser) {
-    return &parser->tokens[parser->index < parser->count
-                               ? parser->index
-                               : parser->count - 1];
+    return &parser->tokens[parser->index < parser->count ? parser->index
+                                                         : parser->count - 1];
 }
 
 /*
@@ -52,8 +51,7 @@ static const FcToken *current_token(const Parser *parser) {
   ]
 }
 */
-static int fail_at(Parser *parser, const FcToken *token,
-                   const char *message) {
+static int fail_at(Parser *parser, const FcToken *token, const char *message) {
     parser->diagnostic->line = token->line;
     parser->diagnostic->column = token->column;
     parser->diagnostic->message = message;
@@ -102,8 +100,7 @@ static int fail_current(Parser *parser, const char *message) {
   ]
 }
 */
-static int consume_kind(Parser *parser, FcTokenKind kind,
-                        const char *message) {
+static int consume_kind(Parser *parser, FcTokenKind kind, const char *message) {
     if (current_token(parser)->kind != kind) {
         return fail_current(parser, message);
     }
@@ -172,20 +169,40 @@ static int consume_word(Parser *parser, const char *word) {
 
 /*
 {
-  責務: [
-    parse_function: function definitionの構文を検証して関数IRを追加する
-  ]
-  処理: [
-    1: function nameとvoid引数listを読み取る
-    2: voidまたはint return bodyを検証する
-    3: main entry signature・重複名・IR allocationを確認する
-  ]
-  引数: [
-    parser: token列・module IR・diagnostic
-  ]
-  戻り値: [
-    success: function definitionをIRに追加できたら真
-  ]
+  "責務": {"parse_int_literal": "非負のintリテラルを範囲検査して読み取る"},
+  "処理": ["整数トークンを確認する", "32ビット符号付き範囲を超えないよう各桁を加算する"],
+  "引数": {"parser": "トークン列と診断", "value": "読み取った値の出力先"},
+  "戻り値": ["範囲内の整数を消費できたら真"]
+}
+*/
+static int parse_int_literal(Parser *parser, int64_t *value) {
+    const FcToken *token = current_token(parser);
+    if (token->kind != FC_TOKEN_INTEGER || token->length == 0) {
+        return fail_current(parser, "expected integer literal");
+    }
+    int64_t number = 0;
+    for (size_t index = 0; index < token->length; index++) {
+        char digit = token->text[index];
+        if (digit < '0' || digit > '9') {
+            return fail_current(parser, "invalid integer literal");
+        }
+        int64_t part = digit - '0';
+        if (number > (INT32_MAX - part) / 10) {
+            return fail_current(parser, "integer literal exceeds int range");
+        }
+        number = number * 10 + part;
+    }
+    *value = number;
+    parser->index++;
+    return 1;
+}
+
+/*
+{
+  "責務": {"parse_function": "関数定義を検証して関数IRに追加する"},
+  "処理": ["関数名と引数を読み取る", "戻り値と関数本体を検証する", "重複を確認してIRに追加する"],
+  "引数": {"parser": "トークン列、IR、診断"},
+  "戻り値": ["関数定義を追加できたら真"]
 }
 */
 static int parse_function(Parser *parser) {
@@ -239,12 +256,9 @@ static int parse_function(Parser *parser) {
         if (!consume_word(parser, "return")) {
             return 0;
         }
-        const FcToken *value = current_token(parser);
-        if (value->kind != FC_TOKEN_INTEGER || value->length != 1 ||
-            value->text[0] != '0') {
-            return fail_current(parser, "only return 0 is supported");
+        if (!parse_int_literal(parser, &return_value)) {
+            return 0;
         }
-        parser->index++;
         if (!consume_kind(parser, FC_TOKEN_SEMICOLON, "expected ';'")) {
             return 0;
         }
@@ -255,7 +269,8 @@ static int parse_function(Parser *parser) {
         return 0;
     }
 
-    FcIRFunction function = {name->text, name->length, terminator, return_value};
+    FcIRFunction function = {name->text, name->length, terminator,
+                             return_value};
     FcIRAddResult result = fc_ir_add_function(parser->module, function);
     if (result == FC_IR_ADD_DUPLICATE_NAME) {
         return fail_at(parser, name, "duplicate function name");

@@ -29,7 +29,9 @@ if(BUILD_TESTING)
     multiple-functions
     invalid-character
     private-only
-    main-first)
+    main-first
+    constant-returns
+    mixed-returns)
     configure_file(tests/golden/${golden}.fscm ${golden}.fscm COPYONLY)
   endforeach()
   add_executable(fastcompile_tests tests/compiler_tests.c)

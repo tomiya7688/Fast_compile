@@ -7,22 +7,10 @@
 
 /*
 {
-  責務: [
-    fc_parse_module: lexer token列をbackend非依存の関数IRへ変換する
-  ]
-  処理: [
-    1: 関数名・引数・戻り値をtoken単位で解析する
-    2: 空関数またはreturn 0のterminatorをIRへ追加する
-    3: 重複名と未対応構文を位置付きで拒否する
-  ]
-  引数: [
-    tokens: EOFを含むlexer token列
-    module: 0初期化済みmodule IRの出力先
-    diagnostic: 構文エラー位置の出力先
-  ]
-  戻り値: [
-    success: 構文が対応範囲内なら真
-  ]
+  "責務": {"fc_parse_module": "トークン列をバックエンド非依存の関数IRへ変換する"},
+  "処理": ["関数宣言を解析する", "戻り値をIRへ追加する", "重複名と未対応構文を診断する"],
+  "引数": {"tokens": "終端を含むトークン列", "count": "トークン数", "module": "ゼロ初期化済みIR", "diagnostic": "診断の出力先"},
+  "戻り値": ["構文が対応範囲内なら真"]
 }
 */
 int fc_parse_module(const FcToken *tokens, size_t count, FcIRModule *module,

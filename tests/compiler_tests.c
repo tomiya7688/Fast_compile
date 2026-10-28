@@ -200,6 +200,87 @@ static int verify_object(const char *input, const char *output,
 
 /*
 {
+  "責務": {"range_in_file": "バイト範囲がファイル内に収まるか確認する"},
+  "処理": ["開始位置と長さをファイルサイズと比較する"],
+  "引数": {"offset": "開始位置", "length": "バイト数", "file_size": "ファイルサイズ"},
+  "戻り値": ["範囲内なら真"]
+}
+*/
+static int range_in_file(uint64_t offset, uint64_t length, uint64_t file_size) {
+    return offset <= file_size && length <= file_size - offset;
+}
+
+/*
+{
+  "責務": {"verify_integer_object": "整数戻り値のELF機械語とシンボルを検証する"},
+  "処理": ["ソースをコンパイルする", "シンボル位置、長さ、機械語を照合する"],
+  "引数": {"input": "ソースパス", "instructions": "期待する機械語", "sizes": "機械語のバイト数", "symbol_indices": "ソース順のシンボル番号", "count": "関数数"},
+  "戻り値": ["全て一致すれば真"]
+}
+*/
+static int verify_integer_object(const char *input,
+                                 const unsigned char instructions[][6],
+                                 const size_t *sizes,
+                                 const size_t *symbol_indices, size_t count) {
+    FcDiagnostic diagnostic = {0};
+    if (fc_compile_file(input, "integer-return.o", &diagnostic) != FC_SUCCESS) {
+        return 0;
+    }
+    FILE *object = fopen("integer-return.o", "rb");
+    if (object == NULL) {
+        return 0;
+    }
+    Elf64_Ehdr header;
+    Elf64_Shdr sections[5];
+    int valid = count > 0 && fseek(object, 0, SEEK_END) == 0;
+    long file_size = valid ? ftell(object) : -1;
+    valid =
+        valid && file_size >= 0 && fseek(object, 0, SEEK_SET) == 0 &&
+        fread(&header, 1, sizeof(header), object) == sizeof(header) &&
+        memcmp(header.e_ident, ELFMAG, SELFMAG) == 0 &&
+        header.e_ident[EI_CLASS] == ELFCLASS64 &&
+        header.e_ident[EI_DATA] == ELFDATA2LSB && header.e_type == ET_REL &&
+        header.e_machine == EM_X86_64 && header.e_shnum == 5 &&
+        header.e_shstrndx == 4 && header.e_shentsize == sizeof(Elf64_Shdr) &&
+        range_in_file(header.e_shoff, sizeof(sections), (uint64_t)file_size) &&
+        fseek(object, (long)header.e_shoff, SEEK_SET) == 0 &&
+        fread(sections, sizeof(sections[0]), 5, object) == 5 &&
+        sections[1].sh_type == SHT_PROGBITS &&
+        sections[2].sh_type == SHT_SYMTAB &&
+        sections[4].sh_type == SHT_STRTAB &&
+        sections[2].sh_entsize == sizeof(Elf64_Sym) &&
+        sections[2].sh_size == (count + 1) * sizeof(Elf64_Sym) &&
+        range_in_file(sections[1].sh_offset, sections[1].sh_size,
+                      (uint64_t)file_size) &&
+        range_in_file(sections[2].sh_offset, sections[2].sh_size,
+                      (uint64_t)file_size) &&
+        range_in_file(sections[4].sh_offset, sections[4].sh_size,
+                      (uint64_t)file_size) &&
+        sections[1].sh_size == (count - 1) * 16 + sizes[count - 1];
+    for (size_t index = 0; valid && index < count; index++) {
+        Elf64_Sym symbol;
+        unsigned char actual[6] = {0};
+        valid =
+            sizes[index] <= sizeof(actual) &&
+            symbol_indices[index] < count + 1 &&
+            fseek(object,
+                  (long)(sections[2].sh_offset +
+                         symbol_indices[index] * sizeof(symbol)),
+                  SEEK_SET) == 0 &&
+            fread(&symbol, sizeof(symbol), 1, object) == 1 &&
+            symbol.st_value == index * 16 && symbol.st_size == sizes[index] &&
+            range_in_file(symbol.st_value, sizes[index], sections[1].sh_size) &&
+            fseek(object, (long)(sections[1].sh_offset + symbol.st_value),
+                  SEEK_SET) == 0 &&
+            fread(actual, 1, sizes[index], object) == sizes[index] &&
+            memcmp(actual, instructions[index], sizes[index]) == 0;
+    }
+    fclose(object);
+    return valid;
+}
+
+/*
+{
   "責務": {"main": "構文解析とELF出力のテストを実行する"},
   "処理": ["関数名と構文を確認する", "ELF出力と入力エラーを確認する"],
   "戻り値": ["全テストが通れば0"]
@@ -247,9 +328,28 @@ int main(void) {
     CHECK(strcmp(diagnostic.message,
                  "main must use one of the specified entry signatures") == 0);
     fc_ir_free(&module);
-    CHECK(!parse_source("fn main(void) -> int { return 1; }", &module,
+    CHECK(parse_source("fn main(void) -> int { return 2147483647; }", &module,
+                       &diagnostic));
+    CHECK(module.count == 1 && module.functions[0].return_value == INT32_MAX);
+    fc_ir_free(&module);
+    CHECK(!parse_source("fn main(void) -> int { return 2147483648; }", &module,
                         &diagnostic));
     CHECK(diagnostic.line == 1 && diagnostic.column == 31);
+    CHECK(strcmp(diagnostic.message, "integer literal exceeds int range") == 0);
+    fc_ir_free(&module);
+    CHECK(!parse_source("fn main(void) -> int { return 4294967296; }", &module,
+                        &diagnostic));
+    CHECK(strcmp(diagnostic.message, "integer literal exceeds int range") == 0);
+    fc_ir_free(&module);
+    CHECK(!parse_source("fn main(void) -> int { return -1; }", &module,
+                        &diagnostic));
+    CHECK(diagnostic.line == 1 && diagnostic.column == 31);
+    CHECK(strcmp(diagnostic.message, "expected '>' after '-'") == 0);
+    fc_ir_free(&module);
+    CHECK(!parse_source(
+        "fn main(void) -> int { return 999999999999999999999999; }", &module,
+        &diagnostic));
+    CHECK(strcmp(diagnostic.message, "integer literal exceeds int range") == 0);
     fc_ir_free(&module);
 
     FcTokenList invalid_tokens = {0};
@@ -269,6 +369,20 @@ int main(void) {
         verify_object("private-only.fscm", "private-only.o", private_names, 2));
     CHECK(
         verify_object("main-first.fscm", "main-first.o", main_first_names, 2));
+    const unsigned char integer_code[][6] = {
+        {0xb8, 0x01, 0, 0, 0, 0xc3},
+        {0xb8, 0x2a, 0, 0, 0, 0xc3},
+        {0xb8, 0xff, 0xff, 0xff, 0x7f, 0xc3}};
+    const size_t integer_sizes[] = {6, 6, 6};
+    const size_t integer_symbols[] = {1, 3, 2};
+    CHECK(verify_integer_object("constant-returns.fscm", integer_code,
+                                integer_sizes, integer_symbols, 3));
+    const unsigned char mixed_code[][6] = {{0xb8, 0x2a, 0, 0, 0, 0xc3},
+                                           {0x31, 0xc0, 0xc3}};
+    const size_t mixed_sizes[] = {6, 3};
+    const size_t mixed_symbols[] = {1, 2};
+    CHECK(verify_integer_object("mixed-returns.fscm", mixed_code, mixed_sizes,
+                                mixed_symbols, 2));
     CHECK(fc_compile_file("missing.fscm", "missing.o", &diagnostic) ==
           FC_INPUT_ERROR);
     return 0;

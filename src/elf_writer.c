@@ -7,7 +7,50 @@
 #include <string.h>
 
 static const unsigned char return_zero_code[] = {0x31, 0xc0, 0xc3};
+static const size_t return_integer_code_size = 6;
 static const char section_strings[] = "\0.text\0.symtab\0.strtab\0.shstrtab\0";
+
+/*
+{
+  "責務": {"function_code_size": "対応する関数の機械語の長さを返す"},
+  "処理": ["終端の種別とintの範囲を検証する", "ゼロまたは非ゼロのコード長を選ぶ"],
+  "引数": {"function": "関数IR"},
+  "戻り値": ["対応するコード長、未対応なら0"]
+}
+*/
+static size_t function_code_size(const FcIRFunction *function) {
+    if (function->terminator == FC_IR_RETURN_VOID) {
+        return sizeof(return_zero_code);
+    }
+    if (function->terminator != FC_IR_RETURN_CONSTANT ||
+        function->return_value < 0 || function->return_value > INT32_MAX) {
+        return 0;
+    }
+    return function->return_value == 0 ? sizeof(return_zero_code)
+                                       : return_integer_code_size;
+}
+
+/*
+{
+  "責務": {"write_function_code": "検証済みの関数IRをx86-64機械語へ変換する"},
+  "処理": ["ゼロの戻り値にはゼロ化命令を使う", "非ゼロのintを即値として書く"],
+  "引数": {"function": "検証済み関数IR", "output": "十分な大きさの出力先"}
+}
+*/
+static void write_function_code(const FcIRFunction *function,
+                                unsigned char *output) {
+    if (function->terminator == FC_IR_RETURN_VOID ||
+        function->return_value == 0) {
+        memcpy(output, return_zero_code, sizeof(return_zero_code));
+        return;
+    }
+    uint32_t value = (uint32_t)function->return_value;
+    output[0] = 0xb8;
+    for (unsigned index = 0; index < 4; index++) {
+        output[index + 1] = (unsigned char)(value >> (index * 8));
+    }
+    output[5] = 0xc3;
+}
 
 /*
 {
@@ -78,14 +121,12 @@ static int build_function_tables(const FcIRModule *module, Elf64_Sym *symbols,
     for (size_t index = 0; index < module->count; index++) {
         const FcIRFunction *function = &module->functions[index];
         size_t code_offset = index * 16;
+        size_t code_size = function_code_size(function);
         if (function->name == NULL || function->name_length == 0 ||
             name_offset >= symbol_names_size ||
             function->name_length > symbol_names_size - name_offset - 1 ||
-            code_offset > text_size ||
-            sizeof(return_zero_code) > text_size - code_offset ||
-            (function->terminator != FC_IR_RETURN_VOID &&
-             (function->terminator != FC_IR_RETURN_CONSTANT ||
-              function->return_value != 0))) {
+            code_size == 0 || code_offset > text_size ||
+            code_size > text_size - code_offset) {
             return 0;
         }
 
@@ -99,8 +140,8 @@ static int build_function_tables(const FcIRModule *module, Elf64_Sym *symbols,
             ELF64_ST_INFO(is_entry ? STB_GLOBAL : STB_LOCAL, STT_FUNC);
         symbols[symbol_index].st_shndx = 1;
         symbols[symbol_index].st_value = code_offset;
-        symbols[symbol_index].st_size = sizeof(return_zero_code);
-        memcpy(text + code_offset, return_zero_code, sizeof(return_zero_code));
+        symbols[symbol_index].st_size = code_size;
+        write_function_code(function, text + code_offset);
         name_offset += function->name_length + 1;
     }
     return name_offset == symbol_names_size;
@@ -118,16 +159,18 @@ int fc_write_elf_object(const char *path, const FcIRModule *module) {
     if (path == NULL || module == NULL ||
         (module->count > 0 && module->functions == NULL) ||
         module->count > UINT32_MAX - 1 ||
-        module->count > (SIZE_MAX - sizeof(return_zero_code)) / 16 + 1) {
+        module->count > (SIZE_MAX - return_integer_code_size) / 16 + 1) {
         return 0;
     }
 
     size_t symbol_names_size = 1;
     size_t global_count = 0;
+    size_t last_code_size = 0;
     for (size_t index = 0; index < module->count; index++) {
         size_t name_length = module->functions[index].name_length;
+        last_code_size = function_code_size(&module->functions[index]);
         if (module->functions[index].name == NULL || name_length == 0 ||
-            symbol_names_size >= UINT32_MAX ||
+            last_code_size == 0 || symbol_names_size >= UINT32_MAX ||
             name_length > UINT32_MAX - symbol_names_size - 1) {
             return 0;
         }
@@ -137,9 +180,8 @@ int fc_write_elf_object(const char *path, const FcIRModule *module) {
 
     size_t symbol_count = module->count + 1;
     size_t first_global = symbol_count - global_count;
-    size_t text_size = module->count == 0 ? 0
-                                          : (module->count - 1) * 16 +
-                                                sizeof(return_zero_code);
+    size_t text_size =
+        module->count == 0 ? 0 : (module->count - 1) * 16 + last_code_size;
     if (symbol_count > SIZE_MAX / sizeof(Elf64_Sym)) {
         return 0;
     }

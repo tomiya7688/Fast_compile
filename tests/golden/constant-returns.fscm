@@ -1,0 +1,3 @@
+fn work(void) -> int { return 1; }
+fn main(void) -> int { return 42; }
+fn finish(void) -> int { return 2147483647; }
