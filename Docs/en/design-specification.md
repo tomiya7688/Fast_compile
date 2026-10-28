@@ -2922,6 +2922,19 @@ The guiding rule is:
 > Conditions are always explicit boolean expressions.
 
 
+## Line comments
+
+Fast compile uses `//` for single-line comments.
+
+```text
+const n = 10; // comment until the end of this line
+// comment covering a whole line
+```
+
+The lexer ignores characters after `//` until a newline or the end of the file. A `//` sequence inside a string literal does not begin a comment. A single `/` remains the division operator. Comments do not produce parser tokens, but source positions are preserved for diagnostics.
+
+Other comment forms such as `/* ... */` are not included in the current specification.
+
 ## 50. Whitespace and indentation
 
 Whitespace and indentation do not define program structure in Fast compile.
