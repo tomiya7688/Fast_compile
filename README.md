@@ -69,6 +69,23 @@ ctest --test-dir build --output-on-failure
 
 CTestは開発時の検証用です。`fastcompile` のCLIにはテスト実行や最終リンク機能を含めません。
 
+### Cコードの整形
+
+開発者はPythonとpipを使い、プロジェクト内の `build/formatter` に固定版のclang-formatを導入します。
+
+```sh
+python -m pip install --target build/formatter -r requirements-format.txt
+```
+
+変更したCソースとヘッダーを指定して整形します。Windowsでは次を実行してください。Linuxでは実行ファイル名から `.exe` を除いてください。
+
+```sh
+build/formatter/clang_format/data/bin/clang-format.exe -i src/ir.c src/ir.h tests/compiler_tests.c
+build/formatter/clang_format/data/bin/clang-format.exe --dry-run --Werror src/ir.c src/ir.h tests/compiler_tests.c
+```
+
+ファイル名は作業で変更したCソースとヘッダーに置き換えてください。生成物と外部コードは対象に含めません。
+
 ### コンパイル
 
 利用者はLinux x86-64上で `.fscm` ファイルを指定し、ELF relocatable objectを生成します。
