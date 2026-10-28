@@ -8,8 +8,8 @@ execute_process(
   RESULT_VARIABLE result
   ERROR_VARIABLE diagnostic)
 
-if(result EQUAL 0)
-  message(FATAL_ERROR "fastcompile accepted a missing input file")
+if(NOT result EQUAL 3)
+  message(FATAL_ERROR "expected input error exit code 3, got: ${result}")
 endif()
 if(NOT diagnostic MATCHES "missing.fscm: cannot read source file")
   message(
