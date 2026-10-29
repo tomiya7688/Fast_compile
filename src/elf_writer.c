@@ -23,7 +23,8 @@ static size_t function_code_size(const FcIRFunction *function) {
         return sizeof(return_zero_code);
     }
     if (function->terminator != FC_IR_RETURN_CONSTANT ||
-        function->return_value < 0 || function->return_value > INT32_MAX) {
+        function->return_value < INT32_MIN ||
+        function->return_value > INT32_MAX) {
         return 0;
     }
     return function->return_value == 0 ? sizeof(return_zero_code)

@@ -152,7 +152,8 @@ static int append_token(Lexer *lexer, FcTokenKind kind, size_t start,
     FcTokenList *tokens = lexer->tokens;
     if (tokens->count == tokens->capacity) {
         size_t capacity = tokens->capacity == 0 ? 32 : tokens->capacity * 2;
-        if (capacity < tokens->capacity || capacity > SIZE_MAX / sizeof(FcToken)) {
+        if (capacity < tokens->capacity ||
+            capacity > SIZE_MAX / sizeof(FcToken)) {
             lexer->diagnostic->line = line;
             lexer->diagnostic->column = column;
             lexer->diagnostic->message = "token list is too large";
@@ -227,7 +228,8 @@ int fc_lex_source(const char *source, FcTokenList *tokens,
             kind = FC_TOKEN_IDENTIFIER;
             do {
                 advance(&lexer);
-            } while (is_identifier_continue((unsigned char)source[lexer.offset]));
+            } while (
+                is_identifier_continue((unsigned char)source[lexer.offset]));
         } else if (is_digit(character)) {
             kind = FC_TOKEN_INTEGER;
             do {
@@ -252,15 +254,12 @@ int fc_lex_source(const char *source, FcTokenList *tokens,
                 kind = FC_TOKEN_SEMICOLON;
                 break;
             case '-':
-                if (source[lexer.offset] != '>') {
-                    diagnostic->line = line;
-                    diagnostic->column = column;
-                    diagnostic->message = "expected '>' after '-'";
-                    fc_free_tokens(tokens);
-                    return 0;
+                if (source[lexer.offset] == '>') {
+                    advance(&lexer);
+                    kind = FC_TOKEN_ARROW;
+                } else {
+                    kind = FC_TOKEN_MINUS;
                 }
-                advance(&lexer);
-                kind = FC_TOKEN_ARROW;
                 break;
             default:
                 diagnostic->line = line;

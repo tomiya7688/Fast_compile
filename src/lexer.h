@@ -14,6 +14,7 @@ typedef enum {
     FC_TOKEN_RIGHT_BRACE,
     FC_TOKEN_SEMICOLON,
     FC_TOKEN_ARROW,
+    FC_TOKEN_MINUS,
     FC_TOKEN_END
 } FcTokenKind;
 

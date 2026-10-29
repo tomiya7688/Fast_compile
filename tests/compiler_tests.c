@@ -341,10 +341,26 @@ int main(void) {
                         &diagnostic));
     CHECK(strcmp(diagnostic.message, "integer literal exceeds int range") == 0);
     fc_ir_free(&module);
-    CHECK(!parse_source("fn main(void) -> int { return -1; }", &module,
+    CHECK(parse_source("fn main(void) -> int { return -2147483648; }", &module,
+                       &diagnostic));
+    CHECK(module.count == 1 && module.functions[0].return_value == INT32_MIN);
+    fc_ir_free(&module);
+    CHECK(parse_source("fn main(void) -> int { return - 1; }", &module,
+                       &diagnostic));
+    CHECK(module.count == 1 && module.functions[0].return_value == -1);
+    fc_ir_free(&module);
+    CHECK(!parse_source("fn main(void) -> int { return -2147483649; }", &module,
                         &diagnostic));
-    CHECK(diagnostic.line == 1 && diagnostic.column == 31);
-    CHECK(strcmp(diagnostic.message, "expected '>' after '-'") == 0);
+    CHECK(diagnostic.line == 1 && diagnostic.column == 32);
+    CHECK(strcmp(diagnostic.message, "integer literal exceeds int range") == 0);
+    fc_ir_free(&module);
+    CHECK(!parse_source("fn main(void) -> int { return -; }", &module,
+                        &diagnostic));
+    CHECK(strcmp(diagnostic.message, "expected integer literal") == 0);
+    fc_ir_free(&module);
+    CHECK(!parse_source("fn main(void) -> int { return --1; }", &module,
+                        &diagnostic));
+    CHECK(strcmp(diagnostic.message, "expected integer literal") == 0);
     fc_ir_free(&module);
     CHECK(!parse_source(
         "fn main(void) -> int { return 999999999999999999999999; }", &module,
@@ -377,6 +393,14 @@ int main(void) {
     const size_t integer_symbols[] = {1, 3, 2};
     CHECK(verify_integer_object("constant-returns.fscm", integer_code,
                                 integer_sizes, integer_symbols, 3));
+    const unsigned char negative_code[][6] = {
+        {0xb8, 0xff, 0xff, 0xff, 0xff, 0xc3},
+        {0xb8, 0x00, 0x00, 0x00, 0x80, 0xc3},
+        {0x31, 0xc0, 0xc3}};
+    const size_t negative_sizes[] = {6, 6, 3};
+    const size_t negative_symbols[] = {1, 3, 2};
+    CHECK(verify_integer_object("negative-returns.fscm", negative_code,
+                                negative_sizes, negative_symbols, 3));
     const unsigned char mixed_code[][6] = {{0xb8, 0x2a, 0, 0, 0, 0xc3},
                                            {0x31, 0xc0, 0xc3}};
     const size_t mixed_sizes[] = {6, 3};

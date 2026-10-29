@@ -31,6 +31,7 @@ if(BUILD_TESTING)
     private-only
     main-first
     constant-returns
+    negative-returns
     mixed-returns)
     configure_file(tests/golden/${golden}.fscm ${golden}.fscm COPYONLY)
   endforeach()

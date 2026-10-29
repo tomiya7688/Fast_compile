@@ -169,30 +169,35 @@ static int consume_word(Parser *parser, const char *word) {
 
 /*
 {
-  "責務": {"parse_int_literal": "非負のintリテラルを範囲検査して読み取る"},
+  "責務": {"parse_int_literal": "符号付きintリテラルを範囲検査して読み取る"},
   "処理": ["整数トークンを確認する", "32ビット符号付き範囲を超えないよう各桁を加算する"],
   "引数": {"parser": "トークン列と診断", "value": "読み取った値の出力先"},
   "戻り値": ["範囲内の整数を消費できたら真"]
 }
 */
 static int parse_int_literal(Parser *parser, int64_t *value) {
+    int negative = current_token(parser)->kind == FC_TOKEN_MINUS;
+    if (negative) {
+        parser->index++;
+    }
     const FcToken *token = current_token(parser);
     if (token->kind != FC_TOKEN_INTEGER || token->length == 0) {
         return fail_current(parser, "expected integer literal");
     }
     int64_t number = 0;
+    int64_t limit = (int64_t)INT32_MAX + negative;
     for (size_t index = 0; index < token->length; index++) {
         char digit = token->text[index];
         if (digit < '0' || digit > '9') {
             return fail_current(parser, "invalid integer literal");
         }
         int64_t part = digit - '0';
-        if (number > (INT32_MAX - part) / 10) {
+        if (number > (limit - part) / 10) {
             return fail_current(parser, "integer literal exceeds int range");
         }
         number = number * 10 + part;
     }
-    *value = number;
+    *value = negative ? -number : number;
     parser->index++;
     return 1;
 }
