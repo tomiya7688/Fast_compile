@@ -300,6 +300,26 @@ int main(void) {
     CHECK(module.count == 0);
     fc_ir_free(&module);
 
+    CHECK(parse_source("// 先頭\nfn main(void) -> int { // 本体\r\n"
+                       "return 1; } // 末尾",
+                       &module, &diagnostic));
+    CHECK(module.count == 1 && module.functions[0].return_value == 1);
+    fc_ir_free(&module);
+    CHECK(parse_source("//", &module, &diagnostic));
+    CHECK(module.count == 0);
+    fc_ir_free(&module);
+    CHECK(parse_source("fn main()->int{return 1// comment\n;}", &module,
+                       &diagnostic));
+    CHECK(module.count == 1 && module.functions[0].return_value == 1);
+    fc_ir_free(&module);
+    CHECK(!parse_source("// コメント\n  @", &module, &diagnostic));
+    CHECK(diagnostic.line == 2 && diagnostic.column == 3);
+    CHECK(strcmp(diagnostic.message, "invalid source character") == 0);
+    fc_ir_free(&module);
+    CHECK(!parse_source("/", &module, &diagnostic));
+    CHECK(strcmp(diagnostic.message, "invalid source character") == 0);
+    fc_ir_free(&module);
+
     CHECK(parse_source("fn work(void) { } fn work2() -> void { } "
                        "fn main(void) -> int { return 0; }",
                        &module, &diagnostic));

@@ -213,6 +213,13 @@ int fc_lex_source(const char *source, FcTokenList *tokens,
     Lexer lexer = {source, 0, 1, 1, tokens, diagnostic};
 
     while (source[lexer.offset] != '\0') {
+        if (source[lexer.offset] == '/' && source[lexer.offset + 1] == '/') {
+            while (source[lexer.offset] != '\0' &&
+                   source[lexer.offset] != '\n') {
+                advance(&lexer);
+            }
+            continue;
+        }
         if (is_whitespace(source[lexer.offset])) {
             advance(&lexer);
             continue;
