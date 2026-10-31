@@ -97,26 +97,20 @@ static int is_whitespace(char character) {
 
 /*
 {
-  責務: [
-    advance: lexer位置を1byte進めlineとcolumnを更新する
-  ]
-  処理: [
-    1: offsetを進める
-    2: LFならlineを増やしcolumnを戻す
-    3: それ以外はcolumnを増やす
-  ]
-  引数: [
-    lexer: 走査状態
-  ]
-  戻り値: [
-    character: 進める前のbyte
-  ]
+  "責務": {"advance": "lexer位置を1バイト進めて行と列を更新する"},
+  "処理": ["CR、LF、CRLFをそれぞれ1行として数える", "その他のバイトでは列を進める"],
+  "引数": {"lexer": "走査状態"},
+  "戻り値": ["進める前のバイト"]
 }
 */
 static char advance(Lexer *lexer) {
     char character = lexer->source[lexer->offset++];
-    if (character == '\n') {
+    if (character == '\r' ||
+        (character == '\n' &&
+         (lexer->offset < 2 || lexer->source[lexer->offset - 2] != '\r'))) {
         lexer->line++;
+        lexer->column = 1;
+    } else if (character == '\n') {
         lexer->column = 1;
     } else {
         lexer->column++;
@@ -215,7 +209,8 @@ int fc_lex_source(const char *source, FcTokenList *tokens,
     while (source[lexer.offset] != '\0') {
         if (source[lexer.offset] == '/' && source[lexer.offset + 1] == '/') {
             while (source[lexer.offset] != '\0' &&
-                   source[lexer.offset] != '\n') {
+                   source[lexer.offset] != '\n' &&
+                   source[lexer.offset] != '\r') {
                 advance(&lexer);
             }
             continue;
