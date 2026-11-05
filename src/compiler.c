@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 /*
 {
@@ -40,7 +41,9 @@ FcStatus fc_compile_file(const char *source_path, const char *output_path,
 
     char *source = NULL;
     size_t source_length = 0;
-    if (!fc_read_source(source_path, &source, &source_length)) {
+    struct stat source_identity;
+    if (!fc_read_source(source_path, &source, &source_length,
+                        &source_identity)) {
         diagnostic->path = source_path;
         diagnostic->message = "cannot read source file";
         return FC_INPUT_ERROR;
@@ -67,7 +70,7 @@ FcStatus fc_compile_file(const char *source_path, const char *output_path,
     }
     fc_free_tokens(&tokens);
 
-    if (!fc_write_elf_object(output_path, &module)) {
+    if (!fc_write_elf_object(output_path, &module, &source_identity)) {
         fc_ir_free(&module);
         free(source);
         diagnostic->line = 0;

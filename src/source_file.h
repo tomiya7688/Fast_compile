@@ -2,27 +2,17 @@
 #define FASTCOMPILE_SOURCE_FILE_H
 
 #include <stddef.h>
+#include <sys/stat.h>
 
 /*
 {
-  責務: [
-    fc_read_source: ソース全体を終端NUL付きメモリへ読み込む
-  ]
-  処理: [
-    1: ファイルをバイナリモードで開く
-    2: 必要量に応じてバッファを拡張する
-    3: 読み取り完了後に終端NULを付ける
-  ]
-  引数: [
-    path: 読み込むソースパス
-    source: ソースバッファの出力先
-    length: NULを除くソースサイズの出力先
-  ]
-  戻り値: [
-    success: 読み込みに成功したら真
-  ]
+  "責務": {"fc_read_source": "ソースを終端NUL付きメモリに読み込む"},
+  "処理": ["入力を開いて識別情報を取得する", "内容を読み込み終端NULを付ける"],
+  "引数": {"path": "ソースパス", "source": "バッファ出力先", "length": "サイズ出力先", "identity": "入力ファイルの識別情報の出力先"},
+  "戻り値": ["読み込みに成功したら真"]
 }
 */
-int fc_read_source(const char *path, char **source, size_t *length);
+int fc_read_source(const char *path, char **source, size_t *length,
+                   struct stat *identity);
 
 #endif

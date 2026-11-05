@@ -112,6 +112,10 @@ Linuxでは `PYTHONPATH=build/formatter python -m cmakelang.format` の後に同
 build/fastcompile source.fscm -o output.o
 ```
 
+読み込んだ入力と、出力として開いたファイルが同じ場合は、リンクを通じて指定した場合もエラーになります。出力先には通常のファイルを指定してください。
+
+コンパイル中に別プロセスが入出力パスやリンク先を変更する場合、変更後のパスが指すファイルの保護は保証されません。
+
 ## 状態
 
 仕様を正本として初期コンパイラ実装を進めています。言語全体、ABI、最適化、incremental buildは未実装です。

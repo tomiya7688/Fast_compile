@@ -1,10 +1,14 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "elf_writer.h"
 
 #include <elf.h>
+#include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static const unsigned char return_zero_code[] = {0x31, 0xc0, 0xc3};
 static const size_t return_integer_code_size = 6;
@@ -152,12 +156,13 @@ static int build_function_tables(const FcIRModule *module, Elf64_Sym *symbols,
 {
   "責務": {"fc_write_elf_object": "関数IRをLinux x86-64 ELFオブジェクトへ変換する"},
   "処理": ["出力用の表を確保する", "ELFヘッダーを構築する", "整列して各セクションを書き出す"],
-  "引数": {"path": "出力先", "module": "ソース順の関数IR"},
+  "引数": {"path": "出力先", "module": "ソース順の関数IR", "source_identity": "入力ファイルの識別情報"},
   "戻り値": ["ELFオブジェクトを書き終えたら真"]
 }
 */
-int fc_write_elf_object(const char *path, const FcIRModule *module) {
-    if (path == NULL || module == NULL ||
+int fc_write_elf_object(const char *path, const FcIRModule *module,
+                        const struct stat *source_identity) {
+    if (path == NULL || module == NULL || source_identity == NULL ||
         (module->count > 0 && module->functions == NULL) ||
         module->count > UINT32_MAX - 1 ||
         module->count > (SIZE_MAX - return_integer_code_size) / 16 + 1) {
@@ -252,8 +257,21 @@ int fc_write_elf_object(const char *path, const FcIRModule *module) {
     sections[4].sh_size = sizeof(section_strings) - 1;
     sections[4].sh_addralign = 1;
 
-    FILE *output = fopen(path, "wb");
+    int descriptor = open(path, O_WRONLY | O_CREAT | O_NONBLOCK, 0666);
+    struct stat output_identity;
+    if (descriptor >= 0 &&
+        (fstat(descriptor, &output_identity) != 0 ||
+         !S_ISREG(output_identity.st_mode) ||
+         (source_identity->st_dev == output_identity.st_dev &&
+          source_identity->st_ino == output_identity.st_ino))) {
+        close(descriptor);
+        descriptor = -1;
+    }
+    FILE *output = descriptor < 0 ? NULL : fdopen(descriptor, "wb");
     if (output == NULL) {
+        if (descriptor >= 0) {
+            close(descriptor);
+        }
         free(symbols);
         free(symbol_names);
         free(text);
@@ -261,6 +279,7 @@ int fc_write_elf_object(const char *path, const FcIRModule *module) {
     }
 
     int success =
+        ftruncate(descriptor, 0) == 0 &&
         write_bytes(output, &header, sizeof(header)) &&
         write_bytes(output, text, text_size) &&
         pad_to(output, text_offset + text_size, symtab_offset) &&

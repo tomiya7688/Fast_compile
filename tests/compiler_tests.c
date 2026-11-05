@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "compiler.h"
 #include "ir.h"
 #include "lexer.h"
@@ -7,6 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define CHECK(condition)                                                       \
     do {                                                                       \
@@ -34,6 +38,151 @@ static int parse_source(const char *source, FcIRModule *module,
     int success =
         fc_parse_module(tokens.items, tokens.count, module, diagnostic);
     fc_free_tokens(&tokens);
+    return success;
+}
+
+/*
+{
+  "責務": {"verify_input_aliases": "入力と同じファイルへの出力を拒否することを検証する"},
+  "処理": ["ハードリンクとシンボリックリンクを作る", "コンパイル後も入力の内容を検証する"],
+  "戻り値": ["同一ファイルが保護されたら真"]
+}
+*/
+static int verify_input_aliases(void) {
+    const char source[] = "fn main(void) { }";
+    FcDiagnostic diagnostic = {0};
+    int success = 0;
+    int hard_created = 0;
+    int sym_created = 0;
+    int output_created = 0;
+    int output_link_created = 0;
+    int fifo_created = 0;
+    const char *failure_stage = "create test directory";
+    char directory[] = "alias-test-XXXXXX";
+    if (mkdtemp(directory) == NULL) {
+        fprintf(stderr, "alias test: %s failed\n", failure_stage);
+        return 0;
+    }
+    char source_path[80];
+    char hard_path[80];
+    char sym_path[80];
+    char output_path[80];
+    char output_link_path[80];
+    char fifo_path[80];
+    snprintf(source_path, sizeof(source_path), "%s/input.fscm", directory);
+    snprintf(hard_path, sizeof(hard_path), "%s/hard.o", directory);
+    snprintf(sym_path, sizeof(sym_path), "%s/sym.o", directory);
+    snprintf(output_path, sizeof(output_path), "%s/output.o", directory);
+    snprintf(output_link_path, sizeof(output_link_path), "%s/other.o",
+             directory);
+    snprintf(fifo_path, sizeof(fifo_path), "%s/fifo.o", directory);
+    FILE *file = fopen(source_path, "wb");
+    if (file == NULL) {
+        fprintf(stderr, "alias test: create source failed\n");
+        rmdir(directory);
+        return 0;
+    }
+    failure_stage = "write source";
+    size_t written = fwrite(source, 1, sizeof(source) - 1, file);
+    int close_result = fclose(file);
+    if (written != sizeof(source) - 1 || close_result != 0) {
+        goto cleanup;
+    }
+    failure_stage = "create hard link";
+    if (link(source_path, hard_path) != 0) {
+        goto cleanup;
+    }
+    hard_created = 1;
+    failure_stage = "create symbolic link";
+    if (symlink("input.fscm", sym_path) != 0) {
+        goto cleanup;
+    }
+    sym_created = 1;
+    failure_stage = "reject hard link output";
+    if (fc_compile_file(source_path, hard_path, &diagnostic) !=
+        FC_OUTPUT_ERROR) {
+        goto cleanup;
+    }
+    failure_stage = "reject symbolic link output";
+    success =
+        fc_compile_file(source_path, sym_path, &diagnostic) == FC_OUTPUT_ERROR;
+    if (!success) {
+        goto cleanup;
+    }
+    failure_stage = "preserve input contents";
+    char contents[sizeof(source)] = {0};
+    file = fopen(source_path, "rb");
+    if (file == NULL) {
+        success = 0;
+    } else {
+        success = success &&
+                  fread(contents, 1, sizeof(source) - 1, file) ==
+                      sizeof(source) - 1 &&
+                  memcmp(contents, source, sizeof(source) - 1) == 0;
+        if (fclose(file) != 0) {
+            success = 0;
+        }
+    }
+    if (!success) {
+        goto cleanup;
+    }
+    failure_stage = "create independent output and link";
+    file = fopen(output_path, "wb");
+    if (file == NULL) {
+        success = 0;
+        goto cleanup;
+    }
+    output_created = 1;
+    if (fclose(file) != 0 || chmod(output_path, 0640) != 0 ||
+        symlink("output.o", output_link_path) != 0) {
+        success = 0;
+        goto cleanup;
+    }
+    output_link_created = 1;
+    struct stat before;
+    struct stat after;
+    struct stat link_info;
+    failure_stage = "preserve output mode and symbolic link";
+    success = stat(output_path, &before) == 0 &&
+              fc_compile_file(source_path, output_link_path, &diagnostic) ==
+                  FC_SUCCESS &&
+              stat(output_path, &after) == 0 &&
+              (before.st_mode & 0777) == (after.st_mode & 0777) &&
+              lstat(output_link_path, &link_info) == 0 &&
+              S_ISLNK(link_info.st_mode);
+    if (!success) {
+        goto cleanup;
+    }
+    failure_stage = "create FIFO";
+    if (mkfifo(fifo_path, 0600) != 0) {
+        success = 0;
+        goto cleanup;
+    }
+    fifo_created = 1;
+    failure_stage = "reject FIFO output";
+    success =
+        fc_compile_file(source_path, fifo_path, &diagnostic) == FC_OUTPUT_ERROR;
+cleanup:
+    if (hard_created) {
+        unlink(hard_path);
+    }
+    if (sym_created) {
+        unlink(sym_path);
+    }
+    if (output_link_created) {
+        unlink(output_link_path);
+    }
+    if (output_created) {
+        unlink(output_path);
+    }
+    if (fifo_created) {
+        unlink(fifo_path);
+    }
+    unlink(source_path);
+    rmdir(directory);
+    if (!success) {
+        fprintf(stderr, "alias test: %s failed\n", failure_stage);
+    }
     return success;
 }
 
@@ -294,6 +443,7 @@ int main(void) {
                                   "source contains a NUL byte"));
     CHECK(verify_input_diagnostic("@", 1, "invalid source character"));
     CHECK(verify_many_function_names());
+    CHECK(verify_input_aliases());
     CHECK(fc_ir_add_function(NULL, (FcIRFunction){0}) ==
           FC_IR_ADD_INVALID_FUNCTION);
     CHECK(parse_source("", &module, &diagnostic));
