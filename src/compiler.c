@@ -70,14 +70,19 @@ FcStatus fc_compile_file(const char *source_path, const char *output_path,
     }
     fc_free_tokens(&tokens);
 
-    if (!fc_write_elf_object(output_path, &module, &source_identity)) {
+    FcElfWriteResult result =
+        fc_write_elf_object(output_path, &module, &source_identity);
+    if (result != FC_ELF_WRITE_OK) {
         fc_ir_free(&module);
         free(source);
         diagnostic->line = 0;
         diagnostic->column = 0;
         diagnostic->path = output_path;
-        diagnostic->message = "cannot write object file";
-        return FC_OUTPUT_ERROR;
+        diagnostic->message = result == FC_ELF_WRITE_SAME_FILE
+                                  ? "input and output refer to the same file"
+                                  : "cannot write object file";
+        return result == FC_ELF_WRITE_SAME_FILE ? FC_INVALID_ARGUMENT
+                                                : FC_OUTPUT_ERROR;
     }
     fc_ir_free(&module);
     free(source);

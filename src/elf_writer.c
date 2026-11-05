@@ -157,11 +157,11 @@ static int build_function_tables(const FcIRModule *module, Elf64_Sym *symbols,
   "責務": {"fc_write_elf_object": "関数IRをLinux x86-64 ELFオブジェクトへ変換する"},
   "処理": ["出力用の表を確保する", "ELFヘッダーを構築する", "整列して各セクションを書き出す"],
   "引数": {"path": "出力先", "module": "ソース順の関数IR", "source_identity": "入力ファイルの識別情報"},
-  "戻り値": ["ELFオブジェクトを書き終えたら真"]
+  "戻り値": ["成功、出力失敗、入力と同一のいずれか"]
 }
 */
-int fc_write_elf_object(const char *path, const FcIRModule *module,
-                        const struct stat *source_identity) {
+FcElfWriteResult fc_write_elf_object(const char *path, const FcIRModule *module,
+                                     const struct stat *source_identity) {
     if (path == NULL || module == NULL || source_identity == NULL ||
         (module->count > 0 && module->functions == NULL) ||
         module->count > UINT32_MAX - 1 ||
@@ -259,13 +259,18 @@ int fc_write_elf_object(const char *path, const FcIRModule *module,
 
     int descriptor = open(path, O_WRONLY | O_CREAT | O_NONBLOCK, 0666);
     struct stat output_identity;
-    if (descriptor >= 0 &&
-        (fstat(descriptor, &output_identity) != 0 ||
-         !S_ISREG(output_identity.st_mode) ||
-         (source_identity->st_dev == output_identity.st_dev &&
-          source_identity->st_ino == output_identity.st_ino))) {
+    if (descriptor >= 0 && (fstat(descriptor, &output_identity) != 0 ||
+                            !S_ISREG(output_identity.st_mode))) {
         close(descriptor);
         descriptor = -1;
+    }
+    if (descriptor >= 0 && source_identity->st_dev == output_identity.st_dev &&
+        source_identity->st_ino == output_identity.st_ino) {
+        close(descriptor);
+        free(symbols);
+        free(symbol_names);
+        free(text);
+        return FC_ELF_WRITE_SAME_FILE;
     }
     FILE *output = descriptor < 0 ? NULL : fdopen(descriptor, "wb");
     if (output == NULL) {
@@ -295,5 +300,5 @@ int fc_write_elf_object(const char *path, const FcIRModule *module,
     free(symbols);
     free(symbol_names);
     free(text);
-    return success;
+    return success ? FC_ELF_WRITE_OK : FC_ELF_WRITE_ERROR;
 }

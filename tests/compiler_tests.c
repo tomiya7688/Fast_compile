@@ -100,12 +100,16 @@ static int verify_input_aliases(void) {
     sym_created = 1;
     failure_stage = "reject hard link output";
     if (fc_compile_file(source_path, hard_path, &diagnostic) !=
-        FC_OUTPUT_ERROR) {
+            FC_INVALID_ARGUMENT ||
+        strcmp(diagnostic.message, "input and output refer to the same file") !=
+            0) {
         goto cleanup;
     }
     failure_stage = "reject symbolic link output";
-    success =
-        fc_compile_file(source_path, sym_path, &diagnostic) == FC_OUTPUT_ERROR;
+    success = fc_compile_file(source_path, sym_path, &diagnostic) ==
+                  FC_INVALID_ARGUMENT &&
+              strcmp(diagnostic.message,
+                     "input and output refer to the same file") == 0;
     if (!success) {
         goto cleanup;
     }
