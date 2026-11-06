@@ -166,7 +166,7 @@ FcElfWriteResult fc_write_elf_object(const char *path, const FcIRModule *module,
         (module->count > 0 && module->functions == NULL) ||
         module->count > UINT32_MAX - 1 ||
         module->count > (SIZE_MAX - return_integer_code_size) / 16 + 1) {
-        return 0;
+        return FC_ELF_WRITE_ERROR;
     }
 
     size_t symbol_names_size = 1;
@@ -178,7 +178,7 @@ FcElfWriteResult fc_write_elf_object(const char *path, const FcIRModule *module,
         if (module->functions[index].name == NULL || name_length == 0 ||
             last_code_size == 0 || symbol_names_size >= UINT32_MAX ||
             name_length > UINT32_MAX - symbol_names_size - 1) {
-            return 0;
+            return FC_ELF_WRITE_ERROR;
         }
         global_count += is_entry_function(&module->functions[index]);
         symbol_names_size += name_length + 1;
@@ -189,7 +189,7 @@ FcElfWriteResult fc_write_elf_object(const char *path, const FcIRModule *module,
     size_t text_size =
         module->count == 0 ? 0 : (module->count - 1) * 16 + last_code_size;
     if (symbol_count > SIZE_MAX / sizeof(Elf64_Sym)) {
-        return 0;
+        return FC_ELF_WRITE_ERROR;
     }
     Elf64_Sym *symbols = calloc(symbol_count, sizeof(Elf64_Sym));
     char *symbol_names = malloc(symbol_names_size);
@@ -198,14 +198,14 @@ FcElfWriteResult fc_write_elf_object(const char *path, const FcIRModule *module,
         free(symbols);
         free(symbol_names);
         free(text);
-        return 0;
+        return FC_ELF_WRITE_ERROR;
     }
     if (!build_function_tables(module, symbols, symbol_names, symbol_names_size,
                                text, text_size, first_global)) {
         free(symbols);
         free(symbol_names);
         free(text);
-        return 0;
+        return FC_ELF_WRITE_ERROR;
     }
 
     const uint64_t text_offset = sizeof(Elf64_Ehdr);
@@ -280,7 +280,7 @@ FcElfWriteResult fc_write_elf_object(const char *path, const FcIRModule *module,
         free(symbols);
         free(symbol_names);
         free(text);
-        return 0;
+        return FC_ELF_WRITE_ERROR;
     }
 
     int success =
