@@ -268,6 +268,11 @@ static int parse_function(Parser *parser) {
             return 0;
         }
         terminator = FC_IR_RETURN_CONSTANT;
+    } else if (is_word(current_token(parser), "return")) {
+        parser->index++;
+        if (!consume_kind(parser, FC_TOKEN_SEMICOLON, "expected ';'")) {
+            return 0;
+        }
     }
 
     if (!consume_kind(parser, FC_TOKEN_RIGHT_BRACE, "expected '}'")) {

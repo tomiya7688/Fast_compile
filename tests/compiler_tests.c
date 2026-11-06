@@ -454,6 +454,23 @@ int main(void) {
     CHECK(module.count == 0);
     fc_ir_free(&module);
 
+    CHECK(parse_source("fn work() -> void { return; } fn main() { return; }",
+                       &module, &diagnostic));
+    CHECK(module.count == 2 &&
+          module.functions[0].terminator == FC_IR_RETURN_VOID &&
+          module.functions[1].terminator == FC_IR_RETURN_VOID);
+    fc_ir_free(&module);
+    CHECK(
+        !parse_source("fn work() -> void { return 1; }", &module, &diagnostic));
+    CHECK(strcmp(diagnostic.message, "expected ';'") == 0);
+    fc_ir_free(&module);
+    CHECK(!parse_source("fn work() { return }", &module, &diagnostic));
+    CHECK(strcmp(diagnostic.message, "expected ';'") == 0);
+    fc_ir_free(&module);
+    CHECK(!parse_source("fn main() -> int { return; }", &module, &diagnostic));
+    CHECK(strcmp(diagnostic.message, "expected integer literal") == 0);
+    fc_ir_free(&module);
+
     CHECK(parse_source("// 先頭\nfn main(void) -> int { // 本体\r\n"
                        "return 1; } // 末尾",
                        &module, &diagnostic));
@@ -567,6 +584,9 @@ int main(void) {
     const char *main_first_names[] = {"main", "work"};
     CHECK(verify_object("empty.fscm", "empty.o", NULL, 0));
     CHECK(verify_object("main-void.fscm", "main-void.o", main_names, 1));
+    const char *void_return_names[] = {"work", "main"};
+    CHECK(verify_object("void-return.fscm", "void-return.o", void_return_names,
+                        2));
     CHECK(verify_object("main-int.fscm", "main-int.o", main_names, 1));
     CHECK(verify_object("multiple-functions.fscm", "multiple-functions.o",
                         multiple_names, 3));

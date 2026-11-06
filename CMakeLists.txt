@@ -25,6 +25,7 @@ if(BUILD_TESTING)
     golden
     empty
     main-void
+    void-return
     main-int
     multiple-functions
     invalid-character
